@@ -57,28 +57,33 @@ function wide(el, name, value, frac) {
 }
 
 // Click a wide tile to type into it: the value turns accent with an accent caret; enter commits, escape reverts.
+// Clicking away commits too, or moving to the next tile (the wifi page's name -> password) would throw the edit away.
 function editable(el, name, get, commit, secret = false) {
   el.onclick = () => {
     if (el.querySelector("input")) return;
     const input = document.createElement("input");
     input.type = secret ? "password" : "text";
-    input.value = get();
+    const original = get();
+    input.value = original;
     el.querySelector(".t:not(.inv) span:last-child")?.replaceChildren();
     el.querySelector(".t.inv")?.remove();
     el.appendChild(input);
     input.focus();
     input.select();
+    let closed = false;  // enter removes the input, which may fire one more blur: finish only once
     const done = async (ok) => {
+      if (closed) return;
+      closed = true;
       const v = input.value;
       input.remove();
-      if (ok) await commit(v);
+      if (ok && v !== original) await commit(v);  // untouched: no save, no POST
       render();
     };
     input.onkeydown = (e) => {
       if (e.key === "Enter") done(true);
       if (e.key === "Escape") done(false);
     };
-    input.onblur = () => done(false);
+    input.onblur = () => done(true);
   };
   el.dataset.name = name;
 }
