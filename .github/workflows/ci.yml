@@ -49,8 +49,11 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: airmidi-${{ matrix.board }}
+          # flash_args is idf.py's own, so it lists every file the board needs: ota_data_initial.bin (rollback is on)
+          # belongs in the zip too, or `esptool.py write_flash @flash_args` stops at a missing file.
           path: |
             firmware/build_${{ matrix.board }}/airmidi.bin
             firmware/build_${{ matrix.board }}/bootloader/bootloader.bin
             firmware/build_${{ matrix.board }}/partition_table/partition-table.bin
+            firmware/build_${{ matrix.board }}/ota_data_initial.bin
             firmware/build_${{ matrix.board }}/flash_args
