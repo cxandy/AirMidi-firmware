@@ -15,7 +15,7 @@ if(CONFIG_AIRMIDI_USB_HOST)
     # The managed component compiles the device stack only (usbd.c, tusb.c, the device class drivers); the host
     # stack and its drivers are these, from the same tree (managed_components sits two levels above this component,
     # beside firmware/). tusb.c and tusb_fifo.c are left out: the managed component already builds them.
-    set(tusb ${CMAKE_CURRENT_LIST_DIR}/../../../managed_components/espressif__tinyusb)
+    set(tusb ${CMAKE_CURRENT_LIST_DIR}/../../managed_components/espressif__tinyusb)
     set(tuh_srcs
         ${tusb}/src/host/usbh.c
         ${tusb}/src/host/hub.c
