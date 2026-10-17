@@ -1,7 +1,10 @@
 #include "board.h"
 
 #include "driver/gpio.h"
+#include "esp_log.h"
 #include "sdkconfig.h"
+
+static const char *TAG = "board";
 
 #if CONFIG_AIRMIDI_BOARD_XIAO_C6
 static const board_t the_board = {
@@ -41,6 +44,11 @@ static const board_t the_board = {
     // answering its authentication) while BLE worked; at 10 dBm all did. Most likely its 3.3 V sagging at the
     // transmit peaks on a USB port.
     .wifi_max_tx = 60,
+#ifdef CONFIG_AIRMIDI_USB_HOST
+    // The port reads a USB MIDI device in this build, and a host has to raise VBUS itself: this pin drives
+    // whatever switches 5 V onto the cable (a USB host adapter or break-out has a VBUS pin for it).
+    .vbus = CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO,
+#endif
 };
 #else
 #error "no board selected (CONFIG_AIRMIDI_BOARD)"
@@ -59,6 +67,14 @@ void board_init(void) {
         gpio_config_t led = {.pin_bit_mask = 1ULL << the_board.led, .mode = GPIO_MODE_OUTPUT};
         gpio_config(&led);
         gpio_set_level(the_board.led, 0);
+    }
+    if (the_board.vbus != GPIO_NUM_NC) {
+        // Early and unconditionally: a device does not power its USB transceiver until it sees VBUS, so a piano
+        // plugged in before this would never enumerate.
+        gpio_config_t v = {.pin_bit_mask = 1ULL << the_board.vbus, .mode = GPIO_MODE_OUTPUT};
+        gpio_config(&v);
+        gpio_set_level(the_board.vbus, 1);
+        ESP_LOGI(TAG, "USB VBUS on GPIO%d", the_board.vbus);
     }
     gpio_config_t btn = {
         .pin_bit_mask = 1ULL << the_board.button, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};

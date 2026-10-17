@@ -1,3 +1,8 @@
+# tinyusb only builds for the targets it lists (esp32s2/s3/p4/h4/s31), so this has to be skipped elsewhere or
+# version solving fails on the C6. The device stack (espressif/esp_tinyusb) carries the same dependency for the
+# S3, so this only decides it explicitly where the host role needs it.
 dependencies:
   tinyusb:
     version: ">=0.17.0~2"
+    rules:
+      - if: "target in [esp32s3]"

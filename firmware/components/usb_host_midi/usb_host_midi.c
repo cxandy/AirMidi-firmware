@@ -1,13 +1,19 @@
+// USB host role for the S3's one USB port. Built only when CONFIG_AIRMIDI_USB_HOST says so; otherwise these
+// three functions are the stubs and nothing else in here is compiled, so the C6 build never asks for TinyUSB.
 #include "usb_host_midi.h"
+
+#include <string.h>
+
+#include "sdkconfig.h"
+
+#if CONFIG_AIRMIDI_USB_HOST
 
 #include "airmidi/midi1.h"
 #include "bus.h"
-#include "driver/gpio.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "sdkconfig.h"
 #include "tusb.h"
 
 static const char *TAG = "usbhost";
@@ -20,6 +26,9 @@ static const char *TAG = "usbhost";
     "CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO must name the GPIO that enables the VBUS switch: without VBUS the \
 piano's USB transceiver does not even power up"
 #endif
+
+// VBUS itself is the board layer's business: board_init raises it before anything else runs, because a device
+// does not power its USB transceiver until it sees VBUS and would otherwise never enumerate.
 
 static midi1_in_t parser;    // piano -> bus
 static midi1_out_t encoder;  // bus -> piano
@@ -127,11 +136,7 @@ static const bus_output_ops_t ops = {
 // ---- start ---------------------------------------------------------------------------------------------------
 
 void usb_host_midi_start(void) {
-    gpio_config_t vbus = {.pin_bit_mask = 1ULL << CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO, .mode = GPIO_MODE_OUTPUT};
-    gpio_config(&vbus);
-    gpio_set_level(CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO, 1);
-    ESP_LOGI(TAG, "VBUS on GPIO%d", CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO);
-
+    ESP_LOGI(TAG, "USB host on port %d, VBUS from GPIO%d", RHPORT, CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO);
     // Register before the stack comes up: a device can enumerate the moment tusb_init() runs.
     bus_register_output(PORT_USB, &ops, NULL);
 
@@ -141,3 +146,11 @@ void usb_host_midi_start(void) {
 }
 
 void usb_host_midi_get_stats(usb_host_midi_stats_t *out) { *out = stats; }
+
+#else  // the port is not in host role: no VBUS, no host stack, nothing to read
+
+void usb_host_midi_start(void) {}
+
+void usb_host_midi_get_stats(usb_host_midi_stats_t *out) { memset(out, 0, sizeof *out); }
+
+#endif
