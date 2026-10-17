@@ -16,11 +16,12 @@ static const char *TAG = "usbhost";
 #define RX_BUF 48  // tuh_midi_stream_read works in chunks; a bulk IN transfer holds several messages
 
 #ifndef CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO
-#error "CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO must name the GPIO that enables the VBUS switch: without VBUS the \
+#error \
+    "CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO must name the GPIO that enables the VBUS switch: without VBUS the \
 piano's USB transceiver does not even power up"
 #endif
 
-static midi1_in_t parser;  // piano -> bus
+static midi1_in_t parser;    // piano -> bus
 static midi1_out_t encoder;  // bus -> piano
 static usb_host_midi_stats_t stats;
 static uint8_t ifc;  // the one MIDI interface the host driver supports, set when a device mounts
@@ -33,7 +34,7 @@ static ump_t outq[OUTQ];
 static volatile uint16_t out_head, out_tail;
 
 static void usb_host_task(void *arg) {
-    (void) arg;
+    (void)arg;
     while (1) {
         tuh_task();
         while (out_head != out_tail) {
@@ -79,7 +80,7 @@ void tuh_midi_mount_cb(uint8_t idx, const tuh_midi_mount_cb_t *data) {
 }
 
 void tuh_midi_umount_cb(uint8_t idx) {
-    (void) idx;
+    (void)idx;
     mounted = false;
     stats.mounted = false;
     bus_set_up(PORT_USB, false);
@@ -87,7 +88,7 @@ void tuh_midi_umount_cb(uint8_t idx) {
 }
 
 void tuh_midi_rx_cb(uint8_t idx, uint32_t xferred) {
-    (void) idx;
+    (void)idx;
     if (!xferred) return;
     uint8_t buf[RX_BUF];
     uint8_t c;
@@ -101,14 +102,14 @@ void tuh_midi_rx_cb(uint8_t idx, uint32_t xferred) {
 }
 
 void tuh_midi_tx_cb(uint8_t idx, uint32_t xferred) {
-    (void) idx;
-    (void) xferred;  // counted where the message was queued, which is the useful place
+    (void)idx;
+    (void)xferred;  // counted where the message was queued, which is the useful place
 }
 
 // ---- send (bus task) -----------------------------------------------------------------------------------------
 
 static void write_piano(void *ctx, const ump_t *u) {
-    (void) ctx;
+    (void)ctx;
     uint16_t next = (out_head + 1) % OUTQ;
     if (next == out_tail) {
         stats.tx_dropped++;  // the host task has not drained the last burst yet
@@ -126,8 +127,7 @@ static const bus_output_ops_t ops = {
 // ---- start ---------------------------------------------------------------------------------------------------
 
 void usb_host_midi_start(void) {
-    gpio_config_t vbus = {.pin_bit_mask = 1ULL << CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO,
-                          .mode = GPIO_MODE_OUTPUT};
+    gpio_config_t vbus = {.pin_bit_mask = 1ULL << CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO, .mode = GPIO_MODE_OUTPUT};
     gpio_config(&vbus);
     gpio_set_level(CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO, 1);
     ESP_LOGI(TAG, "VBUS on GPIO%d", CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO);
