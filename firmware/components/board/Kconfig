@@ -23,4 +23,27 @@ menu "airmidi board"
                 (UART MIDI on GPIO17/18 if you add them), no battery, the BOOT button as the box's button.
     endchoice
 
+    config AIRMIDI_USB_HOST
+        bool "Read a USB MIDI device on the USB port (host role)"
+        default n
+        depends on IDF_TARGET_ESP32S3
+        help
+            The S3's one USB port normally presents a USB MIDI device to a computer, with the console on a
+            serial port beside it. In host role it reads a device instead: a digital piano that has neither
+            5-pin DIN nor Bluetooth is a USB MIDI device (its USB TO HOST port), and this is what lets the
+            box take its notes and pedals and send them out over BLE and Wi-Fi, so nothing has to be
+            tethered to a tablet. One port, one role: this build has no USB console and no USB MIDI
+            output, and the console stays on UART0, so the dev kit's USB-UART bridge port carries the log.
+
+            The piano needs a real host adapter: see AIRMIDI_USB_HOST_VBUS_GPIO.
+
+    config AIRMIDI_USB_HOST_VBUS_GPIO
+        int "VBUS enable GPIO"
+        default 4
+        depends on AIRMIDI_USB_HOST
+        help
+            A USB host has to raise VBUS itself; the port supplies none. Drive this GPIO through whatever
+            switches 5 V onto the piano's cable (a USB host adapter or a USB-A break-out has a VBUS pin for
+            this). Without it the piano's USB transceiver does not power up and no device ever appears.
+
 endmenu

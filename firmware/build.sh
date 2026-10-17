@@ -1,7 +1,8 @@
 #!/bin/bash
 # Build (and optionally flash) the firmware for one board, each in its own build directory:
-#   ./build.sh [c6|s3|s3kit] [flash] [monitor]       default c6; PORT=/dev/cu.usbmodemXXXX to pick the port
-#   (s3kit: a bare ESP32-S3-DevKitC-1 instead of the receiver PCB)
+#   ./build.sh [c6|s3|s3kit|s3usbhost] [flash] [monitor]   default c6; PORT=/dev/cu.usbmodemXXXX to pick the port
+#   (s3kit: a bare ESP32-S3-DevKitC-1 instead of the receiver PCB; s3usbhost: that board with its USB port in host
+#    role, reading a USB MIDI device such as a digital piano's USB TO HOST port)
 set -e
 cd "$(dirname "$0")"
 board=${1:-c6}
@@ -9,7 +10,8 @@ case $board in
     c6) target=esp32c6 ;;
     s3) target=esp32s3 ;;
     s3kit) target=esp32s3 board_defaults=sdkconfig.devkitc_s3 ;;
-    *) echo "usage: $0 [c6|s3|s3kit] [flash] [monitor]"; exit 1 ;;
+    s3usbhost) target=esp32s3 board_defaults=sdkconfig.defaults.s3usbhost no_target_defaults=1 ;;
+    *) echo "usage: $0 [c6|s3|s3kit|s3usbhost] [flash] [monitor]"; exit 1 ;;
 esac
 shift || true
 export IDF_PATH=${IDF_PATH:-$HOME/Developer/esp-idf}
@@ -28,8 +30,14 @@ fi
 # SDKCONFIG per board too, so switching boards never mixes configurations.
 idf=(idf.py -B "$dir" -D SDKCONFIG="$dir/sdkconfig" -D IDF_TARGET=$target)
 # Test images (tools/hil/ota_test.py): an extra defaults file and a version label.
+# sdkconfig.defaults.$target carries the receiver PCB's pin table and the TinyUSB device stack, which the USB host
+# build contradicts, so it takes sdkconfig.defaults and its own file only.
 extra="${board_defaults:-}${board_defaults:+${EXTRA_DEFAULTS:+;}}${EXTRA_DEFAULTS:-}"
-if [ -n "$extra" ]; then idf+=(-D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.$target;$extra"); fi
+if [ -n "$extra" ]; then
+    base="sdkconfig.defaults"
+    [ -z "$no_target_defaults" ] && base="$base;sdkconfig.defaults.$target"
+    idf+=(-D SDKCONFIG_DEFAULTS="$base;$extra")
+fi
 if [ -n "$PROJECT_VER" ]; then idf+=(-D PROJECT_VER="$PROJECT_VER"); fi
 "${idf[@]}" build
 if [ "$1" = flash ]; then

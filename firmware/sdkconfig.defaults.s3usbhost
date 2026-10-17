@@ -1,0 +1,22 @@
+# USB host role, on a bare ESP32-S3-DevKitC-1: the one USB port reads a USB MIDI device (a digital piano's USB TO
+# HOST port) instead of presenting one. Bluetooth, Network MIDI and the web UI work as they do on s3kit, so a piano
+# with neither 5-pin DIN nor Bluetooth feeds the box and leaves the tablet free.
+#
+# Everything in sdkconfig.defaults.esp32s3 is deliberately NOT set here except what the host role changes: that file
+# selects the receiver PCB's pin table (XIAO S3), takes the USB PHY for TinyUSB with CONFIG_ESP_CONSOLE_NONE, and asks
+# for octal PSRAM this board happens to have. This build is on a dev kit, so:
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_AIRMIDI_BOARD_DEVKITC_S3=y
+CONFIG_AIRMIDI_USB_HOST=y
+# Which GPIO switches 5 V onto the piano's cable (board/Kconfig).
+CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO=4
+# The console stays on UART0: there is no CDC on this port any more, and the dev kit's USB-UART bridge (GPIO43/44)
+# is untouched, so the log is still there on that cable.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+# Same octal PSRAM the other S3 builds use.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y

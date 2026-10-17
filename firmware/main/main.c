@@ -26,6 +26,9 @@
 #include "uart_midi.h"
 #include "ui_io.h"
 #include "usb_midi.h"
+#ifdef CONFIG_AIRMIDI_USB_HOST
+#include "usb_host_midi.h"
+#endif
 #include "webui.h"
 
 static const char *TAG = "airmidi";
@@ -160,6 +163,15 @@ static void print_status(void) {
     printf("usb: %s, rx %lu packets, tx %lu packets (%lu dropped: the host is not reading)\n",
            u.mounted ? "attached" : "detached", (unsigned long)u.rx_packets, (unsigned long)u.tx_packets,
            (unsigned long)u.tx_dropped);
+#ifdef CONFIG_AIRMIDI_USB_HOST
+    // Host role: the same picture read the other way round. It is what tells a piano that will not enumerate
+    // apart from one that is simply not plugged in.
+    usb_host_midi_stats_t h;
+    usb_host_midi_get_stats(&h);
+    printf("usb host: %s, %u/%u cables, rx %lu packets, tx %lu packets (%lu dropped)\n",
+           h.mounted ? "device mounted" : "no device", h.rx_cables, h.tx_cables, (unsigned long)h.rx_packets,
+           (unsigned long)h.tx_packets, (unsigned long)h.tx_dropped);
+#endif
     for (int i = 0; i < 2; i++) {
         ble_midi_slot_stats_t s;
         ble_midi_get_stats(i, &s);
@@ -218,7 +230,11 @@ void app_main(void) {
     nvs_settings_get(&s);
 
     bus_start(s.sysex_timeout_ms);
+#ifdef CONFIG_AIRMIDI_USB_HOST
+    usb_host_midi_start();  // the port reads a USB MIDI device; the console stays on UART0
+#else
     usb_midi_start(s.name);  // S3: the console moves to USB from here on
+#endif
     uart_midi_start();
     ci_start();
     ble_running = ble_wanted(&s);
