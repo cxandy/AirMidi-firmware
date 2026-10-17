@@ -34,10 +34,10 @@ static const board_t the_board = {
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 static const board_t the_board = {
     .name = "ESP32-S3-DevKitC-1",
-    .midi_tx = GPIO_NUM_17,  // free pins (43/44 go to the kit's USB-UART bridge)
-    .midi_rx = GPIO_NUM_18,
-    .led = GPIO_NUM_NC,    // only an addressable RGB LED on the kit
-    .button = GPIO_NUM_0,  // BOOT, with the kit's pull-up
+    .midi_tx = GPIO_NUM_14,  // MIDI OUT A
+    .midi_rx = GPIO_NUM_21,  // MIDI IN
+    .led = GPIO_NUM_NC,      // only an addressable RGB LED on the kit
+    .button = GPIO_NUM_0,    // BOOT, with the kit's pull-up
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = -1,  // no battery: always "on USB"
     // At the full 20 dBm none of the kit's Wi-Fi frames arrived (no ESP-NOW acknowledgement, no access point
@@ -76,6 +76,10 @@ void board_init(void) {
         gpio_set_level(the_board.vbus, 1);
         ESP_LOGI(TAG, "USB VBUS on GPIO%d", the_board.vbus);
     }
+    // GPIO15: MIDI OUT B power enable, held high so OUT A can drive the line.
+    gpio_config_t gpio15 = {.pin_bit_mask = 1ULL << GPIO_NUM_15, .mode = GPIO_MODE_OUTPUT};
+    gpio_config(&gpio15);
+    gpio_set_level(GPIO_NUM_15, 1);
     gpio_config_t btn = {
         .pin_bit_mask = 1ULL << the_board.button, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
     gpio_config(&btn);
