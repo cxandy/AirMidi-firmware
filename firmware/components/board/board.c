@@ -16,6 +16,7 @@ static const board_t the_board = {
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO0
     .batt_offset_mv = 14,               // board #1: calibrated ADC read 14 mV under the meter (2026-10-05)
+    .midi_out_b_en = GPIO_NUM_NC,        // no MIDI OUT B on this board
 };
 // Inside the XIAO C6 module: GPIO3 low powers the RF switch, GPIO14 low selects the ceramic antenna (high = the
 // U.FL connector, measured ~20 dB weaker with nothing plugged in).
@@ -30,6 +31,7 @@ static const board_t the_board = {
     .button = GPIO_NUM_3,
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO1
+    .midi_out_b_en = GPIO_NUM_NC,        // no MIDI OUT B on this board
 };
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 static const board_t the_board = {
@@ -40,6 +42,9 @@ static const board_t the_board = {
     .button = GPIO_NUM_0,    // BOOT, with the kit's pull-up
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = -1,  // no battery: always "on USB"
+    // The custom MIDI wiring on this kit: OUT A on GPIO14, IN on GPIO21, and GPIO15 switches OUT B's
+    // power so OUT A can drive the line.
+    .midi_out_b_en = GPIO_NUM_15,
     // At the full 20 dBm none of the kit's Wi-Fi frames arrived (no ESP-NOW acknowledgement, no access point
     // answering its authentication) while BLE worked; at 10 dBm all did. Most likely its 3.3 V sagging at the
     // transmit peaks on a USB port.
@@ -76,10 +81,12 @@ void board_init(void) {
         gpio_set_level(the_board.vbus, 1);
         ESP_LOGI(TAG, "USB VBUS on GPIO%d", the_board.vbus);
     }
-    // GPIO15: MIDI OUT B power enable, held high so OUT A can drive the line.
-    gpio_config_t gpio15 = {.pin_bit_mask = 1ULL << GPIO_NUM_15, .mode = GPIO_MODE_OUTPUT};
-    gpio_config(&gpio15);
-    gpio_set_level(GPIO_NUM_15, 1);
+    // MIDI OUT B's power enable, where the board has one: held high so OUT A can drive the line.
+    if (the_board.midi_out_b_en != GPIO_NUM_NC) {
+        gpio_config_t en = {.pin_bit_mask = 1ULL << the_board.midi_out_b_en, .mode = GPIO_MODE_OUTPUT};
+        gpio_config(&en);
+        gpio_set_level(the_board.midi_out_b_en, 1);
+    }
     gpio_config_t btn = {
         .pin_bit_mask = 1ULL << the_board.button, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
     gpio_config(&btn);

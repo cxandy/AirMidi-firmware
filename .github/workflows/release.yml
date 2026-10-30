@@ -13,13 +13,15 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        board: [c6, s3, s3kit]
+        board: [c6, s3, s3kit, s3usbhost]
         include:
           - board: c6
             target: esp32c6
           - board: s3
             target: esp32s3
           - board: s3kit  # the ESP32-S3-DevKitC-1 on its own
+            target: esp32s3
+          - board: s3usbhost  # that board with its USB port in host role, reading a USB MIDI device
             target: esp32s3
     steps:
       - uses: actions/checkout@v5
@@ -67,6 +69,9 @@ jobs:
           merge-multiple: true
       - name: manifest.json
         run: |
+          # One image per board, not per variant: a box reads this by its board key (ota.c's BOARD_KEY) and
+          # fetches the device-role image. The host-role image is a role variant of the same board, published
+          # as its own asset for a kit that reads a piano instead of presenting a port.
           cat > out/manifest.json <<JSON
           {"version": "${{ github.ref_name }}", "images": {"c6": "airmidi-c6.bin", "s3": "airmidi-s3.bin", "s3kit": "airmidi-s3kit.bin"}}
           JSON

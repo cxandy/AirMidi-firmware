@@ -29,7 +29,8 @@ after reset, before any of our code runs, which a synth reads as random Program 
 **A third board: the ESP32-S3-DevKitC-1 on its own** (`build.sh s3kit`, `CONFIG_AIRMIDI_BOARD_DEVKITC_S3`), the
 second box for USB MIDI and the ESP-NOW cable before a second receiver PCB exists. No LED (only an addressable RGB
 LED on the kit), no battery (`batt_adc_channel = -1`: always "on USB"), BOOT (GPIO0) as the button, MIDI UART on
-GPIO17/18 if jacks are wired (43/44 go to the kit's USB-UART bridge, which carries the boot log and panic reports).
+GPIO14 (OUT A) and GPIO21 (IN) if jacks are wired, with GPIO15 held high as MIDI OUT B's power enable (43/44 go to the
+kit's USB-UART bridge, which carries the boot log and panic reports).
 
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
 whenever Wi-Fi starts. The dev kit is held to 15 dBm. At 20 dBm none of its Wi-Fi frames arrived anywhere, while its

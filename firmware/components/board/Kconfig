@@ -20,7 +20,7 @@ menu "airmidi board"
             depends on IDF_TARGET_ESP32S3
             help
                 A bare dev kit on its native USB port: USB MIDI, the radios and the web UI, no TRS jacks wired
-                (UART MIDI on GPIO17/18 if you add them), no battery, the BOOT button as the box's button.
+                (UART MIDI on GPIO14/GPIO21 if you add them), no battery, the BOOT button as the box's button.
     endchoice
 
     config AIRMIDI_USB_HOST

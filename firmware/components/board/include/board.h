@@ -17,6 +17,7 @@ typedef struct {
     int batt_offset_mv;        // added to the cell reading, from comparing it with a multimeter on this board
     int8_t wifi_max_tx;        // Wi-Fi transmit power limit in 0.25 dBm, 0 = the chip's own (20 dBm)
     gpio_num_t vbus;  // USB host role only: the pin that switches 5 V onto a device's cable (GPIO_NUM_NC otherwise)
+    gpio_num_t midi_out_b_en;  // MIDI OUT B's power enable, held high so OUT A can drive the line (GPIO_NUM_NC: none)
 } board_t;
 
 // The board this firmware was built for (Kconfig AIRMIDI_BOARD).
