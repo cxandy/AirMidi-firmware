@@ -16,7 +16,7 @@ static const board_t the_board = {
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO0
     .batt_offset_mv = 14,               // board #1: calibrated ADC read 14 mV under the meter (2026-10-05)
-    .midi_out_b_en = GPIO_NUM_NC,        // no MIDI OUT B on this board
+    .midi_out_b_en = GPIO_NUM_NC,       // no MIDI OUT B on this board
 };
 // Inside the XIAO C6 module: GPIO3 low powers the RF switch, GPIO14 low selects the ceramic antenna (high = the
 // U.FL connector, measured ~20 dB weaker with nothing plugged in).
@@ -31,7 +31,7 @@ static const board_t the_board = {
     .button = GPIO_NUM_3,
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO1
-    .midi_out_b_en = GPIO_NUM_NC,        // no MIDI OUT B on this board
+    .midi_out_b_en = GPIO_NUM_NC,       // no MIDI OUT B on this board
 };
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 static const board_t the_board = {
