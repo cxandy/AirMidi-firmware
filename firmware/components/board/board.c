@@ -45,6 +45,16 @@ static const board_t the_board = {
     // transmit peaks on a USB port.
     .wifi_max_tx = 60,
 };
+#elif CONFIG_AIRMIDI_BOARD_CUSTOM
+static const board_t the_board = {
+    .name = "Custom board",
+    .midi_tx = GPIO_NUM_14,
+    .midi_rx = GPIO_NUM_21,
+    .led = GPIO_NUM_NC,
+    .button = GPIO_NUM_0,
+    .batt_adc_unit = ADC_UNIT_1,
+    .batt_adc_channel = -1,
+};
 #else
 #error "no board selected (CONFIG_AIRMIDI_BOARD)"
 #endif
@@ -66,6 +76,11 @@ void board_init(void) {
     gpio_config_t btn = {
         .pin_bit_mask = 1ULL << the_board.button, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
     gpio_config(&btn);
+#if CONFIG_AIRMIDI_BOARD_CUSTOM
+    gpio_config_t gpio15 = {.pin_bit_mask = 1ULL << GPIO_NUM_15, .mode = GPIO_MODE_OUTPUT};
+    gpio_config(&gpio15);
+    gpio_set_level(GPIO_NUM_15, 1);
+#endif
 }
 
 // The Wi-Fi station MAC's last three bytes. (Not the default MAC: on the C6 that reads as the 8-byte EUI-64 of its

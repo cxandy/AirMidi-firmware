@@ -21,6 +21,12 @@ menu "airmidi board"
             help
                 A bare dev kit on its native USB port: USB MIDI, the radios and the web UI, no TRS jacks wired
                 (UART MIDI on GPIO17/18 if you add them), no battery, the BOOT button as the box's button.
+
+        config AIRMIDI_BOARD_CUSTOM
+            bool "Custom board (MIDI OUT on GPIO14)"
+            depends on IDF_TARGET_ESP32S3
+            help
+                Custom board with MIDI TX on GPIO14.
     endchoice
 
 endmenu

@@ -1,0 +1,7 @@
+# Custom board with MIDI TX on GPIO14, RX on GPIO21
+# Disable other board options first
+CONFIG_AIRMIDI_BOARD_XIAO_C6=n
+CONFIG_AIRMIDI_BOARD_XIAO_S3=n
+CONFIG_AIRMIDI_BOARD_DEVKITC_S3=n
+# Enable custom board
+CONFIG_AIRMIDI_BOARD_CUSTOM=y

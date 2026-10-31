@@ -9,7 +9,8 @@ case $board in
     c6) target=esp32c6 ;;
     s3) target=esp32s3 ;;
     s3kit) target=esp32s3 board_defaults=sdkconfig.devkitc_s3 ;;
-    *) echo "usage: $0 [c6|s3|s3kit] [flash] [monitor]"; exit 1 ;;
+    custom) target=esp32s3 board_defaults=sdkconfig.custom ;;
+    *) echo "usage: $0 [c6|s3|s3kit|custom] [flash] [monitor]"; exit 1 ;;
 esac
 shift || true
 export IDF_PATH=${IDF_PATH:-$HOME/Developer/esp-idf}
