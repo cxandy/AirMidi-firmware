@@ -65,6 +65,9 @@ A second box: the S3 tests run on an ESP32-S3-DevKitC-1 (`firmware/build.sh s3ki
 a USB MIDI device with its console beside it; `build.sh s3kit flash` gets it into its bootloader through that port
 ([transports.md](transports.md), USB MIDI). Its UART port, when connected, shows the boot log and panics.
 
+`build.sh s3usbhost` flips that board's USB port into host role: it reads a digital piano (a USB MIDI device, its USB
+TO HOST port) through the VBUS enable GPIO (4 by default, on the custom board) and the console stays on UART0.
+
 That route into the bootloader is macOS-only. On Windows the console 'B' does not reach the bootloader either, and it
 leaves the TinyUSB serial port unusable: the port stays enumerated, but every open of it fails afterwards (Windows
 error 31), so no console command can undo it. Both the 'B' and esptool's DTR/RTS pattern end in the same

@@ -13,13 +13,15 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        board: [c6, s3, s3kit, s3usbhost]
+        board: [c6, s3, s3kit, custom, s3usbhost]
         include:
           - board: c6
             target: esp32c6
           - board: s3
             target: esp32s3
           - board: s3kit  # the ESP32-S3-DevKitC-1 on its own
+            target: esp32s3
+          - board: custom  # the dev kit, the receiver's MIDI on its own pins and the MIDI OUT B switch
             target: esp32s3
           - board: s3usbhost  # that board with its USB port in host role, reading a USB MIDI device
             target: esp32s3
