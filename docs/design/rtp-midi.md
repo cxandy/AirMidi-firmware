@@ -82,6 +82,44 @@ after the reset: Wi-Fi, SNTP, and macOS's next clock sync), MIDI both ways after
 with a port is dropped, and macOS adds `state = connected` itself. The session itself (here "RTP Session 3") is made
 once in Audio MIDI Setup's MIDI Network window.
 
+## Connecting from Windows
+
+Windows has no system network-MIDI panel; [rtpMIDI](https://www.tobias-erichsen.de/software/rtpmidi.html) (Tobias
+Erichsen) fills both roles: a virtual MIDI driver, so every app sees the peer as an ordinary port, and the AppleMIDI
+implementation itself. Steps, as run on the bench against a box in Network mode:
+
+1. **Add a session** in *My Sessions* with `+`. The session is this PC's endpoint: it owns the local ports and is what
+   a peer talks to. The `+` here does **not** connect anything, and with no session selected *Directory*'s Connect
+   stays greyed out.
+2. **Put the box in *Directory*.** With Apple's Bonjour installed, rtpMIDI browses for `_apple-midi._udp` and lists the
+   box by its mDNS instance name (`airmidi-b1b0`). Without Bonjour it falls back to a built-in lightweight responder
+   that advertises this PC and never browses, so the box never appears on its own: add it once with *Directory*'s `+`
+   (name `airmidi`, hostname `airmidi-b1b0.local` or its IP, port 5004). The entry persists in the registry under
+   `HKLM\SOFTWARE\WOW6432Node\Tobias Erichsen\rtpMIDI\ManualPeers`.
+3. **Select the session, then the peer, then Connect.** rtpMIDI connects a *session* to a *directory entry*, so Connect
+   on a peer with no session selected does nothing — the grey button is the whole symptom.
+4. The session's row then shows the peer (`DESKTOP-KQMDQOC` here) and a latency figure, and two ports appear to MIDI
+   apps, named after the session rather than after the peer. Measured 4 ms on a PC-to-box link over a phone hotspot.
+
+What went wrong on the way, worth knowing before blaming the box:
+
+- **Directory empty, two unrelated causes.** First the box: it registered `_apple-midi._udp` before it had an IP, so
+  `mdns_service_add` failed silently and nothing was ever announced. `ba46252` fixes it by caching services in
+  `net_add_service` and announcing them again on every join; nothing else may call `mdns_service_add` directly. Then
+  the client: even with the box announcing (3 probes and 3 announces within a second of joining), a rtpMIDI without
+  Bonjour will not browse. Wireshark tells the two apart — announces arriving at the PC with an empty Directory mean
+  the client, so add the manual peer above.
+- **Deleted the only session.** Removing the `+`-created session leaves Directory's Connect grey with no obvious
+  reason; the session is not recreated automatically.
+- **Multi-homed PC.** A reasonable suspicion, and it was wrong here: on a machine with Wi-Fi, Ethernet and a VPN or
+  Hyper-V adapter it is easy to assume discovery landed on the wrong interface, but the box's status page showed the
+  session up with the PC's address while Directory stayed empty, which points at the announcement, not the network.
+  Check `rtp[0] peer` in the status JSON before chasing interfaces.
+
+Both directions were then confirmed by driving the session's ports with `winmm` from a test program: five messages
+PC to box (four notes, one controller) arrived at the USB MIDI output, and 60 notes injected on the box's input
+reached the PC as `0x95`/`0x85` on channel 6, notes 40-79.
+
 ## Measured (C6, Network mode, BLE off)
 
 | Path | Spacing | Median | p95 | Lost |

@@ -63,7 +63,8 @@ board's revision history: the photo shows rev A, and rev B fixes what its bring-
   profile. A MIDI-CI host behind the box reaches the synth through it: macOS finds it over Network MIDI 2.0.
 - **RTP-MIDI** (AppleMIDI, `_apple-midi._udp`) for clients without Network MIDI 2.0: lost packets repaired from the
   recovery journal, sessions taken back after the box restarts. With macOS's driver: 0 of 600 lost each way at 5 ms
-  spacing, 7.3 / 5.5 ms median.
+  spacing, 7.3 / 5.5 ms median. Windows joins with rtpMIDI (4 ms over a PC-to-box link on a phone hotspot); the steps
+  are in [rtp-midi.md](docs/design/rtp-midi.md).
 - **BLE central**: the box connects by itself to a BLE MIDI keyboard or controller (any, by name or by address).
   13.0 ms median keyboard -> TRS.
 - **USB MIDI** on the S3: a class-compliant USB MIDI device named after the box, with a serial console beside it.
