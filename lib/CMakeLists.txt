@@ -10,6 +10,7 @@ add_library(airmidi_core STATIC
     src/router.c
     src/merge.c
     src/ui.c
+    src/captive.c
     src/nm2.c
     src/ump_endpoint.c
     src/json_scan.c

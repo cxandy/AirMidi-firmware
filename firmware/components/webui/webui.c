@@ -54,6 +54,20 @@ static esp_err_t serve_file(httpd_req_t *req) {
     return httpd_resp_send(req, (const char *)f->start, f->end - f->start);
 }
 
+// While the setup access point is up, a name that does not exist here is a phone's connectivity check (iOS asks
+// for captive.apple.com/hotspot-detect.html, Android for connectivitycheck.gstatic.com/generate_204): send it to
+// the setup page instead of a 404, and the phone opens that page by itself. In Network mode a 404 stays a 404.
+static esp_err_t portal_redirect(httpd_req_t *req, httpd_err_code_t err) {
+    if (net_state() != NET_AP) {
+        httpd_resp_set_status(req, "404 Not Found");
+        return httpd_resp_sendstr(req, "not found");
+    }
+    httpd_resp_set_status(req, "302 Found");
+    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/");  // the access point's own address
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    return httpd_resp_send(req, NULL, 0);
+}
+
 // ---- helpers -------------------------------------------------------------------------------------------------
 
 static esp_err_t send_json(httpd_req_t *req, cJSON *root) {
@@ -304,6 +318,8 @@ void webui_start(void) {
         httpd_uri_t u = {.uri = "/api/*", .method = m, .handler = api_handler};
         httpd_register_uri_handler(server, &u);
     }
+    // A phone's captive-portal check while the setup access point is up, sent to the setup page.
+    httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, portal_redirect);
     httpd_uri_t ws = {.uri = "/ws",
                       .method = HTTP_GET,
                       .handler = ws_handler,

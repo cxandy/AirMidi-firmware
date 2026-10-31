@@ -3,8 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 
+#include "airmidi/captive.h"
 #include "board.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -13,6 +16,8 @@
 #include "esp_timer.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "lwip/sockets.h"
 #include "mdns.h"
 #include "nvs.h"
 
@@ -472,6 +477,48 @@ uint8_t net_ap_channel(void) {
     return state == NET_CONNECTED && esp_wifi_sta_get_ap_info(&ap) == ESP_OK ? ap.primary : 0;
 }
 
+// ---- the access point's DNS ------------------------------------------------------------------------------------
+
+// While the access point is up, every name resolves to the box: a phone that joins the open network reaches the
+// web UI at whatever address its captive-portal check asked for, and the portal's 302 (webui.c) sends it on to
+// the page. Outside Setup mode the socket is closed: a station's DNS is its router's job.
+#define DNS_PORT 53
+#define DNS_AP_IP 0xC0A80401u  // 192.168.4.1, as captive_dns_reply() writes it out
+#define DNS_STACK 3584
+
+static void dns_task(void *arg) {
+    uint8_t in[CAPTIVE_DNS_MAX], out[CAPTIVE_DNS_MAX];
+    int sock = -1;
+    for (;;) {
+        if (state != NET_AP) {
+            if (sock >= 0) close(sock), sock = -1;
+            vTaskDelay(pdMS_TO_TICKS(200));
+            continue;
+        }
+        if (sock < 0) {
+            const struct sockaddr_in a = {
+                .sin_family = AF_INET, .sin_port = htons(DNS_PORT), .sin_addr.s_addr = htonl(INADDR_ANY)};
+            sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            if (sock < 0 || bind(sock, (const struct sockaddr *)&a, sizeof a) < 0) {
+                ESP_LOGW(TAG, "dns: no socket on port %d", DNS_PORT);
+                if (sock >= 0) close(sock);
+                sock = -1;
+                vTaskDelay(pdMS_TO_TICKS(1000));  // the access point's netif may still be coming up
+                continue;
+            }
+            const struct timeval tv = {.tv_sec = 0, .tv_usec = 200000};
+            setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
+            ESP_LOGI(TAG, "dns: every name answers 192.168.4.1 while the access point is up");
+        }
+        struct sockaddr_in from;
+        socklen_t from_len = sizeof from;
+        int n = recvfrom(sock, in, sizeof in, 0, (struct sockaddr *)&from, &from_len);
+        if (n <= 0) continue;  // the timeout, or a datagram longer than this buffer
+        size_t reply = captive_dns_reply(in, (size_t)n, out, sizeof out, DNS_AP_IP);
+        if (reply) sendto(sock, out, reply, 0, (const struct sockaddr *)&from, from_len);
+    }
+}
+
 void net_start(airmidi_mode_t m, const char *name) {
     snprintf(host, sizeof host, "%s", name);
     ESP_ERROR_CHECK(esp_netif_init());
@@ -497,6 +544,7 @@ void net_start(airmidi_mode_t m, const char *name) {
     network_t nets[NET_MAX_NETWORKS];
     if (!load(nets)) net_add_network(DEV_WIFI_SSID, DEV_WIFI_PASS);  // dev build: the network from .wifi
 #endif
+    if (xTaskCreate(dns_task, "dns", DNS_STACK, NULL, 4, NULL) != pdPASS) ESP_LOGW(TAG, "no task for the portal's dns");
     net_set_mode(m);
 }
 
