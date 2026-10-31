@@ -21,7 +21,8 @@ static const board_t the_board = {
     .batt_offset_mv = 14,               // board #1: calibrated ADC read 14 mV under the meter (2026-10-05)
     // No MIDI OUT B on this board: its single MIDI IN feeds the TRS cable, and the module's USB port is a
     // device without VBUS.
-    .vbus = GPIO_NUM_NC, .midi_out_b_en = GPIO_NUM_NC,
+    .vbus = GPIO_NUM_NC,
+    .midi_out_b_en = GPIO_NUM_NC,
 };
 // Inside the XIAO C6 module: GPIO3 low powers the RF switch, GPIO14 low selects the ceramic antenna (high = the
 // U.FL connector, measured ~20 dB weaker with nothing plugged in).
@@ -38,7 +39,8 @@ static const board_t the_board = {
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO1
     // No MIDI OUT B on this board: the module's MIDI IN feeds the TRS cable and the module's USB cable carries the
     // console, not VBUS.
-    .vbus = GPIO_NUM_NC, .midi_out_b_en = GPIO_NUM_NC,
+    .vbus = GPIO_NUM_NC,
+    .midi_out_b_en = GPIO_NUM_NC,
 };
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 static const board_t the_board = {
@@ -55,7 +57,8 @@ static const board_t the_board = {
     .wifi_max_tx = 60,
     // No battery on the kit, and its USB port is a device (the same cable also carries the console): for a USB MIDI
     // device to be read the box needs a board with VBUS of its own, see the custom board with CONFIG_AIRMIDI_USB_HOST.
-    .vbus = GPIO_NUM_NC, .midi_out_b_en = GPIO_NUM_NC,
+    .vbus = GPIO_NUM_NC,
+    .midi_out_b_en = GPIO_NUM_NC,
 };
 #elif CONFIG_AIRMIDI_BOARD_CUSTOM
 static const board_t the_board = {
@@ -67,10 +70,13 @@ static const board_t the_board = {
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = -1,  // no battery: always "on USB"
     .midi_out_b_en = GPIO_NUM_15,      // MIDI OUT B's power enable on this board
-#ifdef CONFIG_AIRMIDI_USB_HOST
     // The port reads a USB MIDI device in this build, and a host has to raise VBUS itself: this pin drives
-    // whatever switches 5 V onto the cable (a USB host adapter or break-out has a VBUS pin for it).
+    // whatever switches 5 V onto the cable (a USB host adapter or break-out has a VBUS pin for it). The receiver
+    // build has none of these.
+#ifdef CONFIG_AIRMIDI_USB_HOST
     .vbus = CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO,
+#else
+    .vbus = GPIO_NUM_NC,
 #endif
 };
 #else

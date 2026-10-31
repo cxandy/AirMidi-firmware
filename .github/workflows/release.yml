@@ -73,7 +73,7 @@ jobs:
           # fetches the device-role image. The host-role image is a role variant of the same board, published
           # as its own asset for a kit that reads a piano instead of presenting a port.
           cat > out/manifest.json <<JSON
-          {"version": "${{ github.ref_name }}", "images": {"c6": "airmidi-c6.bin", "s3": "airmidi-s3.bin", "s3kit": "airmidi-s3kit.bin"}}
+          {"version": "${{ github.ref_name }}", "images": {"c6": "airmidi-c6.bin", "s3": "airmidi-s3.bin", "s3kit": "airmidi-s3kit.bin", "custom": "airmidi-custom.bin", "s3usbhost": "airmidi-s3usbhost.bin"}}
           JSON
       - uses: softprops/action-gh-release@v3
         with:
