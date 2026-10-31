@@ -21,6 +21,19 @@
 
 <main>
   <section id="status" class="page">
+    <div id="portal" class="portal" hidden>
+      <div class="portal-text">
+        <p class="label">setup: the box's own wi-fi</p>
+        <p class="small note">this network has no internet, and exists only while the box is in setup mode. open the
+          address below from the phone that joined it, or scan the code with a second one.</p>
+        <div class="portal-url">
+          <a class="value" href="http://192.168.4.1/">192.168.4.1</a>
+          <a id="portal-copy" class="glyph" title="copy the address"><svg viewBox="0 0 24 24"><path d="M9 9h11v11H9zM15 9V4H4v11h5"/></svg></a>
+        </div>
+        <p id="portal-msg" class="small note">join <span id="portal-ssid"></span>, then add your network on the wifi page.</p>
+      </div>
+      <canvas id="portal-qr" class="qr" width="250" height="250"></canvas>
+    </div>
     <div id="meters" class="hero"></div>
     <div class="row">
       <div id="t-batt" class="tile" data-hue="fir"></div>

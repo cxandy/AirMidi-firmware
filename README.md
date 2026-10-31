@@ -48,7 +48,13 @@ board's revision history: the photo shows rev A, and rev B fixes what its bring-
 - **Wi-Fi modes**: Play (Wi-Fi off), Network (joins stored networks, reachable as `<name>.local`), Setup (its own
   access point). A long press switches mode, an 8 s press opens Setup, a double press sends all notes off.
 - **Web UI** at `http://<name>.local`: live traffic per port, battery, signal, settings, Wi-Fi networks, firmware
-  updates. Plain JS, no framework, 18 KB, built into the firmware.
+  updates. Plain JS, no framework, 18 KB, built into the firmware. In Setup mode the status page shows the box's own
+  address and a QR code, and a phone that joins the setup network is sent to the page automatically (a captive portal:
+  every name resolves to `192.168.4.1`, unknown paths 302 there).
+- **Phones use the web console, not network MIDI.** The status and play pages work from any phone browser over
+  Wi-Fi; the play page is a MIDI control surface over the WebSocket (~3.9 ms page → TRS). Network MIDI 2.0 and
+  RTP-MIDI need a Mac (native) or Windows rtpMIDI — iOS has no system network-MIDI panel and the box only answers
+  AppleMIDI invitations, so it does not connect to a phone on its own. See [webui.md](docs/design/webui.md).
 - **Network MIDI 2.0** host (UDP, `_midi2._udp`): macOS connects to it natively. FEC, retransmit and in-order
   delivery over Wi-Fi: 0 of 600 lost at 5 ms spacing, 6.7 ms median Mac -> TRS, 4.2 ms back.
 - **MIDI-CI over TRS**: Discovery and Property Exchange with the synth on the jacks (a full read in under a second
@@ -142,6 +148,7 @@ One note per module, with the reasoning, the alternatives considered and what th
 - [network-midi.md](docs/design/network-midi.md): Network MIDI 2.0
 - [rtp-midi.md](docs/design/rtp-midi.md): RTP-MIDI, the recovery journal, and what macOS needed
 - [midi-ci.md](docs/design/midi-ci.md): MIDI-CI Discovery and Property Exchange, the generated play page
+- [webui.md](docs/design/webui.md): the browser UI, the setup portal (captive DNS + 302), and how phones connect
 - [ota.md](docs/design/ota.md): flash layout, signed updates, self-test and rollback, releases
 - [board-and-settings.md](docs/design/board-and-settings.md): the board layer and the settings store
 - [config-over-ble.md](docs/design/config-over-ble.md): one JSON API for HTTP and BLE, trusted phones, Wi-Fi setup from a phone
