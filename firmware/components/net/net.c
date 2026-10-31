@@ -45,6 +45,37 @@ static bool probe_radio;  // the probe turned the radio on, and turns it off whe
 static char probe_pass[65];
 static esp_timer_handle_t probe_timer;
 
+// ---- mDNS services -------------------------------------------------------------------------------------------
+// A service registered while the box is still associating is announced into an interface that has no address
+// yet, and mDNS announces a record only when it changes: nobody ever sees it. Keeping the list lets every join
+// repeat the announcement, which is what makes rtpMIDI's directory (and <name>.local right after a join) work.
+
+#define NET_MAX_SERVICES 4
+#define NET_TXT_MAX 2
+#define NET_TXT_VALUE 128  // UMPEndpointName alone is up to 98 characters
+
+typedef struct {
+    char type[24];
+    char proto[8];
+    uint16_t port;
+    int n_txt;
+    mdns_txt_item_t txt[NET_TXT_MAX];
+    char value[NET_TXT_MAX][NET_TXT_VALUE];
+} service_t;
+
+static service_t services[NET_MAX_SERVICES];
+static int n_services;
+
+static void announce(service_t *s) {
+    mdns_service_remove(s->type, s->proto);  // absent the first time; the re-add is what triggers the announcement
+    esp_err_t err = mdns_service_add(host, s->type, s->proto, s->port, s->n_txt ? s->txt : NULL, s->n_txt);
+    if (err) ESP_LOGW(TAG, "mDNS %s.%s: %s", s->type, s->proto, esp_err_to_name(err));
+}
+
+static void announce_all(void) {
+    for (int i = 0; i < n_services; i++) announce(&services[i]);
+}
+
 // ---- stored networks -----------------------------------------------------------------------------------------
 
 typedef struct {
@@ -176,6 +207,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data) {
         esp_err_t ps = esp_wifi_set_ps(WIFI_PS_NONE);
         if (ps) ESP_LOGW(TAG, "could not turn Wi-Fi power save off: %s", esp_err_to_name(ps));
         ESP_LOGI(TAG, "joined, %s.local at %s", host, ip_text);
+        announce_all();  // the address exists now, so the records reach the network this time
         // Wall-clock time, for RTP-MIDI's session clock (it must not start again from 0 after a restart).
         if (!sntp_started) {
             esp_sntp_config_t c = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
@@ -186,6 +218,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data) {
         strcpy(ip_text, "192.168.4.1");
         state = NET_AP;
         ESP_LOGI(TAG, "access point \"%s\" up, http://192.168.4.1 or http://%s.local", host, host);
+        announce_all();  // a phone that joins later has no way to be told the address otherwise
     }
 }
 
@@ -548,9 +581,29 @@ void net_start(airmidi_mode_t m, const char *name) {
     net_set_mode(m);
 }
 
+void net_add_service_txt(const char *type, const char *proto, uint16_t port, const net_txt_item_t *txt, int n) {
+    service_t *s = NULL;
+    for (int i = 0; i < n_services; i++)
+        if (!strcmp(services[i].type, type) && !strcmp(services[i].proto, proto)) s = &services[i];
+    if (!s) {
+        if (n_services == NET_MAX_SERVICES) return;
+        s = &services[n_services++];
+    }
+    snprintf(s->type, sizeof s->type, "%s", type);
+    snprintf(s->proto, sizeof s->proto, "%s", proto);
+    s->port = port;
+    s->n_txt = n < 0 ? 0 : (n > NET_TXT_MAX ? NET_TXT_MAX : n);
+    for (int i = 0; i < s->n_txt; i++) {
+        snprintf(s->value[i], sizeof s->value[i], "%s", txt[i].value);  // the caller's buffer may be local
+        s->txt[i].key = txt[i].key;
+        s->txt[i].value = s->value[i];
+    }
+    announce(s);
+}
+
 void net_add_service(const char *type, const char *proto, uint16_t port) {
-    mdns_txt_item_t txt[] = {{"id", board_id()}};  // the same box as the one with this id over BLE
-    mdns_service_add(host, type, proto, port, txt, 1);
+    net_txt_item_t txt[] = {{"id", board_id()}};  // the same box as the one with this id over BLE
+    net_add_service_txt(type, proto, port, txt, 1);
 }
 
 net_state_t net_state(void) { return state; }
