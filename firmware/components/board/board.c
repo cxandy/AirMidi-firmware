@@ -16,6 +16,7 @@ static const board_t the_board = {
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO0
     .batt_offset_mv = 14,               // board #1: calibrated ADC read 14 mV under the meter (2026-10-05)
+    .midi_out_b_en = GPIO_NUM_NC,       // no MIDI OUT B on this board
 };
 // Inside the XIAO C6 module: GPIO3 low powers the RF switch, GPIO14 low selects the ceramic antenna (high = the
 // U.FL connector, measured ~20 dB weaker with nothing plugged in).
@@ -30,6 +31,7 @@ static const board_t the_board = {
     .button = GPIO_NUM_3,
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO1
+    .midi_out_b_en = GPIO_NUM_NC,       // no MIDI OUT B on this board
 };
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 static const board_t the_board = {
@@ -40,6 +42,7 @@ static const board_t the_board = {
     .button = GPIO_NUM_0,  // BOOT, with the kit's pull-up
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = -1,  // no battery: always "on USB"
+    .midi_out_b_en = GPIO_NUM_NC,
     // At the full 20 dBm none of the kit's Wi-Fi frames arrived (no ESP-NOW acknowledgement, no access point
     // answering its authentication) while BLE worked; at 10 dBm all did. Most likely its 3.3 V sagging at the
     // transmit peaks on a USB port.
@@ -54,6 +57,7 @@ static const board_t the_board = {
     .button = GPIO_NUM_0,
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = -1,
+    .midi_out_b_en = GPIO_NUM_15,     // MIDI OUT B's power enable
 };
 #else
 #error "no board selected (CONFIG_AIRMIDI_BOARD)"
@@ -76,11 +80,12 @@ void board_init(void) {
     gpio_config_t btn = {
         .pin_bit_mask = 1ULL << the_board.button, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
     gpio_config(&btn);
-#if CONFIG_AIRMIDI_BOARD_CUSTOM
-    gpio_config_t gpio15 = {.pin_bit_mask = 1ULL << GPIO_NUM_15, .mode = GPIO_MODE_OUTPUT};
-    gpio_config(&gpio15);
-    gpio_set_level(GPIO_NUM_15, 1);
-#endif
+    // MIDI OUT B's power enable, where the board has one: held high so OUT A can drive the line.
+    if (the_board.midi_out_b_en != GPIO_NUM_NC) {
+        gpio_config_t en = {.pin_bit_mask = 1ULL << the_board.midi_out_b_en, .mode = GPIO_MODE_OUTPUT};
+        gpio_config(&en);
+        gpio_set_level(the_board.midi_out_b_en, 1);
+    }
 }
 
 // The Wi-Fi station MAC's last three bytes. (Not the default MAC: on the C6 that reads as the 8-byte EUI-64 of its
