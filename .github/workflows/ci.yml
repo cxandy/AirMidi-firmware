@@ -53,6 +53,7 @@ jobs:
           name: airmidi-${{ matrix.board }}
           path: |
             firmware/build_${{ matrix.board }}/airmidi.bin
+            firmware/build_${{ matrix.board }}/airmidi.elf
             firmware/build_${{ matrix.board }}/bootloader/bootloader.bin
             firmware/build_${{ matrix.board }}/partition_table/partition-table.bin
             firmware/build_${{ matrix.board }}/flash_args
