@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        board: [c6, s3, s3kit, custom]
+        board: [c6, s3, s3kit, custom, s3usbhost]
         include:
           - board: c6
             target: esp32c6
@@ -35,6 +35,8 @@ jobs:
           - board: s3kit  # the ESP32-S3-DevKitC-1 on its own
             target: esp32s3
           - board: custom
+            target: esp32s3
+          - board: s3usbhost  # that board with its USB port in host role, reading a USB MIDI device
             target: esp32s3
     steps:
       - uses: actions/checkout@v5
@@ -51,9 +53,12 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: airmidi-${{ matrix.board }}
+          # flash_args is idf.py's own, so it lists every file the board needs: ota_data_initial.bin (rollback is on)
+          # belongs in the zip too, or `esptool.py write_flash @flash_args` stops at a missing file.
           path: |
             firmware/build_${{ matrix.board }}/airmidi.bin
             firmware/build_${{ matrix.board }}/airmidi.elf
             firmware/build_${{ matrix.board }}/bootloader/bootloader.bin
             firmware/build_${{ matrix.board }}/partition_table/partition-table.bin
+            firmware/build_${{ matrix.board }}/ota_data_initial.bin
             firmware/build_${{ matrix.board }}/flash_args

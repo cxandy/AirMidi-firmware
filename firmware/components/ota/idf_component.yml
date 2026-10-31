@@ -1,0 +1,5 @@
+# cJSON as a managed component: ESP-IDF v6 removed the built-in json component (the cJSON package moved
+# to the component manager), while v5.5 still has it. The managed one works on both (it needs IDF >= 5.0),
+# so the firmware builds on v5.5 (what CI uses) and on v6.x (what a local toolchain has) with the same source.
+dependencies:
+  espressif/cjson: "^1.7.19"

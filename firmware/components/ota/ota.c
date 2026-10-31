@@ -194,6 +194,8 @@ void ota_abort(void) {
 #define BOARD_KEY "s3"
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 #define BOARD_KEY "s3kit"
+#elif CONFIG_AIRMIDI_BOARD_CUSTOM && CONFIG_AIRMIDI_USB_HOST
+#define BOARD_KEY "s3usbhost"  // the host role reads a piano on this board's USB port
 #elif CONFIG_AIRMIDI_BOARD_CUSTOM
 #define BOARD_KEY "custom"
 #endif

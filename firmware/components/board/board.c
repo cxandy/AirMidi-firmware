@@ -3,8 +3,11 @@
 #include <stdio.h>
 
 #include "driver/gpio.h"
+#include "esp_log.h"  // board_init logs VBUS, so this one is needed as well as esp_mac.h
 #include "esp_mac.h"
 #include "sdkconfig.h"
+
+static const char *TAG = "board";
 
 #if CONFIG_AIRMIDI_BOARD_XIAO_C6
 static const board_t the_board = {
@@ -16,7 +19,9 @@ static const board_t the_board = {
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO0
     .batt_offset_mv = 14,               // board #1: calibrated ADC read 14 mV under the meter (2026-10-05)
-    .midi_out_b_en = GPIO_NUM_NC,       // no MIDI OUT B on this board
+    // No MIDI OUT B on this board: its single MIDI IN feeds the TRS cable, and the module's USB port is a
+    // device without VBUS.
+    .vbus = GPIO_NUM_NC, .midi_out_b_en = GPIO_NUM_NC,
 };
 // Inside the XIAO C6 module: GPIO3 low powers the RF switch, GPIO14 low selects the ceramic antenna (high = the
 // U.FL connector, measured ~20 dB weaker with nothing plugged in).
@@ -31,7 +36,9 @@ static const board_t the_board = {
     .button = GPIO_NUM_3,
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO1
-    .midi_out_b_en = GPIO_NUM_NC,       // no MIDI OUT B on this board
+    // No MIDI OUT B on this board: the module's MIDI IN feeds the TRS cable and the module's USB cable carries the
+    // console, not VBUS.
+    .vbus = GPIO_NUM_NC, .midi_out_b_en = GPIO_NUM_NC,
 };
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 static const board_t the_board = {
@@ -42,22 +49,29 @@ static const board_t the_board = {
     .button = GPIO_NUM_0,  // BOOT, with the kit's pull-up
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = -1,  // no battery: always "on USB"
-    .midi_out_b_en = GPIO_NUM_NC,
     // At the full 20 dBm none of the kit's Wi-Fi frames arrived (no ESP-NOW acknowledgement, no access point
     // answering its authentication) while BLE worked; at 10 dBm all did. Most likely its 3.3 V sagging at the
     // transmit peaks on a USB port.
     .wifi_max_tx = 60,
+    // No battery on the kit, and its USB port is a device (the same cable also carries the console): for a USB MIDI
+    // device to be read the box needs a board with VBUS of its own, see the custom board with CONFIG_AIRMIDI_USB_HOST.
+    .vbus = GPIO_NUM_NC, .midi_out_b_en = GPIO_NUM_NC,
 };
 #elif CONFIG_AIRMIDI_BOARD_CUSTOM
 static const board_t the_board = {
-    .name = "Custom board",
-    .midi_tx = GPIO_NUM_14,
-    .midi_rx = GPIO_NUM_21,
-    .led = GPIO_NUM_NC,
-    .button = GPIO_NUM_0,
+    .name = "esp32-s3 dev kit, custom MIDI wiring",
+    .midi_tx = GPIO_NUM_14,  // the custom MIDI wiring: OUT A on GPIO14
+    .midi_rx = GPIO_NUM_21,  // IN on GPIO21 (43/44 go to the kit's USB-UART bridge)
+    .led = GPIO_NUM_NC,      // only an addressable RGB LED on the kit
+    .button = GPIO_NUM_0,    // BOOT, with the kit's pull-up
     .batt_adc_unit = ADC_UNIT_1,
-    .batt_adc_channel = -1,
-    .midi_out_b_en = GPIO_NUM_15,     // MIDI OUT B's power enable
+    .batt_adc_channel = -1,  // no battery: always "on USB"
+    .midi_out_b_en = GPIO_NUM_15,      // MIDI OUT B's power enable on this board
+#ifdef CONFIG_AIRMIDI_USB_HOST
+    // The port reads a USB MIDI device in this build, and a host has to raise VBUS itself: this pin drives
+    // whatever switches 5 V onto the cable (a USB host adapter or break-out has a VBUS pin for it).
+    .vbus = CONFIG_AIRMIDI_USB_HOST_VBUS_GPIO,
+#endif
 };
 #else
 #error "no board selected (CONFIG_AIRMIDI_BOARD)"
@@ -77,15 +91,23 @@ void board_init(void) {
         gpio_config(&led);
         gpio_set_level(the_board.led, 0);
     }
-    gpio_config_t btn = {
-        .pin_bit_mask = 1ULL << the_board.button, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
-    gpio_config(&btn);
+    if (the_board.vbus != GPIO_NUM_NC) {
+        // Early and unconditionally: a device does not power its USB transceiver until it sees VBUS, so a piano
+        // plugged in before this would never enumerate.
+        gpio_config_t v = {.pin_bit_mask = 1ULL << the_board.vbus, .mode = GPIO_MODE_OUTPUT};
+        gpio_config(&v);
+        gpio_set_level(the_board.vbus, 1);
+        ESP_LOGI(TAG, "USB VBUS on GPIO%d", the_board.vbus);
+    }
     // MIDI OUT B's power enable, where the board has one: held high so OUT A can drive the line.
     if (the_board.midi_out_b_en != GPIO_NUM_NC) {
         gpio_config_t en = {.pin_bit_mask = 1ULL << the_board.midi_out_b_en, .mode = GPIO_MODE_OUTPUT};
         gpio_config(&en);
         gpio_set_level(the_board.midi_out_b_en, 1);
     }
+    gpio_config_t btn = {
+        .pin_bit_mask = 1ULL << the_board.button, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
+    gpio_config(&btn);
 }
 
 // The Wi-Fi station MAC's last three bytes. (Not the default MAC: on the C6 that reads as the 8-byte EUI-64 of its

@@ -31,6 +31,12 @@ second box for USB MIDI and the ESP-NOW cable before a second receiver PCB exist
 LED on the kit), no battery (`batt_adc_channel = -1`: always "on USB"), BOOT (GPIO0) as the button, MIDI UART on
 GPIO17/18 if jacks are wired (43/44 go to the kit's USB-UART bridge, which carries the boot log and panic reports).
 
+**A custom board** (`build.sh custom|s3usbhost`, `CONFIG_AIRMIDI_BOARD_CUSTOM`), the dev kit with the receiver's MIDI
+jacks wired to GPIO14 (OUT A) and GPIO21 (IN), and MIDI OUT B's power enable on GPIO15. Its `BOARD_KEY` in
+`ota.c` (what the field reads from a release's manifest) is `"custom"` and, with `CONFIG_AIRMIDI_USB_HOST`,
+`"s3usbhost"`: the port raises VBUS from the VBUS enable GPIO (4 by default) and reads a digital piano's notes on
+its USB TO HOST port, with the console on UART0 and no USB console of its own.
+
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
 whenever Wi-Fi starts. The dev kit is held to 15 dBm. At 20 dBm none of its Wi-Fi frames arrived anywhere, while its
 BLE worked: most likely its 3.3 V sags at the transmit peaks on a USB port ([transports.md](transports.md), ESP-NOW).

@@ -28,6 +28,9 @@
 #include "uart_midi.h"
 #include "ui_io.h"
 #include "usb_midi.h"
+#ifdef CONFIG_AIRMIDI_USB_HOST
+#include "usb_host_midi.h"
+#endif
 #include "webui.h"
 
 static const char *TAG = "airmidi";
@@ -93,7 +96,9 @@ static void set_mode(airmidi_mode_t mode) {
     nvs_settings_get(&s);
     if (s.mode != mode) {
         s.mode = mode;
-        nvs_settings_set(&s);
+        esp_err_t e = nvs_settings_set(&s);
+        // Not fatal (the mode still applies now), but the next boot comes back in the old one: say so.
+        if (e) ESP_LOGE(TAG, "mode %s not stored: %s", airmidi_mode_name(mode), esp_err_to_name(e));
     }
     ESP_LOGI(TAG, "mode: %s", airmidi_mode_name(mode));
     if (ble_wanted(&s) != ble_running) {
@@ -124,7 +129,8 @@ static void toggle_espnow(void) {
     settings_t s;
     nvs_settings_get(&s);
     s.espnow = !s.espnow;
-    nvs_settings_set(&s);
+    esp_err_t e = nvs_settings_set(&s);
+    if (e) ESP_LOGE(TAG, "ESP-NOW not stored: %s", esp_err_to_name(e));
     ESP_LOGI(TAG, "ESP-NOW %s: restarting", s.espnow ? "on" : "off");
     panic();
     vTaskDelay(pdMS_TO_TICKS(300));
@@ -163,6 +169,22 @@ static void print_status(void) {
     uart_midi_get_stats(&t);
     printf("trs: rx %lu bytes (%lu dropped), tx %lu bytes (%lu messages dropped)\n", (unsigned long)t.rx_bytes,
            (unsigned long)t.rx_dropped_bytes, (unsigned long)t.tx_bytes, (unsigned long)t.tx_dropped);
+    // usb_midi_get_stats() had no caller, so "the host is not reading" (tx_dropped) was invisible: a detached host
+    // makes the bus discard silently, with neither port out nor dropped moving.
+    usb_midi_stats_t u;
+    usb_midi_get_stats(&u);
+    printf("usb: %s, rx %lu packets, tx %lu packets (%lu dropped: the host is not reading)\n",
+           u.mounted ? "attached" : "detached", (unsigned long)u.rx_packets, (unsigned long)u.tx_packets,
+           (unsigned long)u.tx_dropped);
+#ifdef CONFIG_AIRMIDI_USB_HOST
+    // Host role: the same picture read the other way round. It is what tells a piano that will not enumerate
+    // apart from one that is simply not plugged in.
+    usb_host_midi_stats_t h;
+    usb_host_midi_get_stats(&h);
+    printf("usb host: %s, %u/%u cables, rx %lu packets, tx %lu packets (%lu dropped)\n",
+           h.mounted ? "device mounted" : "no device", h.rx_cables, h.tx_cables, (unsigned long)h.rx_packets,
+           (unsigned long)h.tx_packets, (unsigned long)h.tx_dropped);
+#endif
     for (int i = 0; i < 2; i++) {
         ble_midi_slot_stats_t s;
         ble_midi_get_stats(i, &s);
@@ -221,7 +243,11 @@ void app_main(void) {
     nvs_settings_get(&s);
 
     bus_start(s.sysex_timeout_ms);
+#ifdef CONFIG_AIRMIDI_USB_HOST
+    usb_host_midi_start();  // the port reads a USB MIDI device; the console stays on UART0
+#else
     usb_midi_start(s.name);  // S3: the console moves to USB from here on
+#endif
     uart_midi_start();
     ci_start();
     ble_running = ble_wanted(&s);

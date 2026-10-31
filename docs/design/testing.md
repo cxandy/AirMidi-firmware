@@ -65,6 +65,12 @@ A second box: the S3 tests run on an ESP32-S3-DevKitC-1 (`firmware/build.sh s3ki
 a USB MIDI device with its console beside it; `build.sh s3kit flash` gets it into its bootloader through that port
 ([transports.md](transports.md), USB MIDI). Its UART port, when connected, shows the boot log and panics.
 
+That route into the bootloader is macOS-only. On Windows the console 'B' does not reach the bootloader either, and it
+leaves the TinyUSB serial port unusable: the port stays enumerated, but every open of it fails afterwards (Windows
+error 31), so no console command can undo it. Both the 'B' and esptool's DTR/RTS pattern end in the same
+`usb_midi_bootloader()` reset, so treat either as needing a physical reset afterwards: hold BOOT, tap RESET, release
+BOOT, and esptool drives the ROM bootloader over USB-Serial-JTAG from there.
+
 CoreMIDI's Bluetooth driver turned out fragile under test automation: after a few `MIDIBluetoothDriverDisconnect`
 calls and with Audio MIDI Setup open for a while, it stopped promoting this peripheral at all (`bluetoothd` lists
 `com.apple.MIDIServer` as a client of the device, the server never acts on the activation), and quitting Audio MIDI
