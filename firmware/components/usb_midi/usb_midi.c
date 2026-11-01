@@ -6,6 +6,7 @@
 #include "airmidi/midi1.h"
 #include "airmidi/usbmidi.h"
 #include "bus.h"
+#include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_rom_sys.h"
@@ -22,6 +23,11 @@
 static const char *TAG = "usb";
 
 #define BACKLOG 32  // packets waiting for room in TinyUSB's FIFO
+
+// Bring-up: the RTC USB register as the last restart found it. RTC memory survives a restart, so the boot after
+// one can report whether something had left it dirty; the magic keeps a fresh boot from reading junk.
+#define USB_CONF_SEEN 0x55534231u
+static RTC_NOINIT_ATTR uint32_t usb_conf_magic, usb_conf_seen;
 
 enum { ITF_CDC, ITF_CDC_DATA, ITF_MIDI, ITF_MIDI_STREAMING, ITF_COUNT };
 enum { EP_CDC_NOTIF = 0x81, EP_CDC_OUT = 0x02, EP_CDC_IN = 0x82, EP_MIDI_OUT = 0x03, EP_MIDI_IN = 0x83 };
@@ -130,17 +136,19 @@ static void line_state(int itf, cdcacm_event_t *e) {
     }
 }
 
-// Every restart: give the USB PHY back to the chip's USB-Serial-JTAG first. The PHY selection lives in the RTC
-// domain and survives a restart; left on USB OTG, the next boot's console output waited forever for a USB-Serial-
-// JTAG nobody could reach, and the box never came back (found on the dev kit). Restarts into the ROM bootloader need
-// it too: the bootloader talks USB-Serial-JTAG.
+// Every restart: give the USB PHY back to the chip's USB-Serial-JTAG first. One RTC-domain register holds all of
+// it: which block the internal PHY is muxed to, the pad and DP/DM pull overrides, and the mask that lets the USB
+// block skip the chip reset entirely. RTC registers survive a restart, so whatever the OTG driver left there went
+// into the next boot. Left on OTG, the console waited forever for a USB-Serial-JTAG nobody could reach, and a
+// restart into the ROM bootloader never enumerated at all: the host kept its old port, dead.
 //
-// Only the pads and the PHY selection are touched, not the USB OTG peripheral itself: a chip reset reinitialises
-// that one anyway, and resetting and clock-gating it from a running app leaves the console and MIDI writing into a
-// controller that is gone before the chip gets around to resetting.
+// Write the register back to its power-on value, which is the state a cold boot hands the ROM, and let the chip
+// reset the USB block instead of skipping it. The two USB-Serial-JTAG pads are set as well, for the restart that
+// does not follow with a reset.
 static void give_back_phy(void) {
-    CLEAR_PERI_REG_MASK(RTC_CNTL_USB_CONF_REG,
-                        RTC_CNTL_SW_HW_USB_PHY_SEL | RTC_CNTL_SW_USB_PHY_SEL | RTC_CNTL_USB_PAD_ENABLE);
+    usb_conf_seen = REG_READ(RTC_CNTL_USB_CONF_REG);  // bring-up: what the OTG driver left behind
+    usb_conf_magic = USB_CONF_SEEN;
+    REG_WRITE(RTC_CNTL_USB_CONF_REG, 0);
     CLEAR_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_PHY_SEL);  // the internal PHY
     SET_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_USB_PAD_ENABLE);
 }
@@ -175,6 +183,10 @@ void usb_midi_start(const char *name) {
     // The console (log and commands) moves here. A dev kit's UART console keeps what comes before this and panics.
     ESP_ERROR_CHECK(tinyusb_console_init(TINYUSB_CDC_ACM_0));
     ESP_LOGI(TAG, "USB MIDI device \"%s\", console on its serial port", product);
+    if (usb_conf_magic == USB_CONF_SEEN) {  // bring-up
+        ESP_LOGI(TAG, "last restart found RTC_CNTL_USB_CONF_REG 0x%08x", (unsigned)usb_conf_seen);
+        usb_conf_magic = 0;
+    }
 }
 
 void usb_midi_get_stats(usb_midi_stats_t *out) { *out = stats; }
