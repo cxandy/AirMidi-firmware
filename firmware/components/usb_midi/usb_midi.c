@@ -166,7 +166,9 @@ void usb_midi_start(const char *name) {
 void usb_midi_get_stats(usb_midi_stats_t *out) { *out = stats; }
 
 void usb_midi_bootloader(void) {
-    ESP_LOGW(TAG, "restarting into the ROM bootloader");
+    // No log line first: the console is this very CDC, and writing to it while the host has closed the port (the
+    // caller sends 'B' and goes away) blocked here, so esp_restart() never ran and the box was left running with a
+    // dead serial port. Set the flag and restart; the next boot's log says where we went.
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
     esp_restart();
 }

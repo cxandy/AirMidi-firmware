@@ -107,42 +107,59 @@ void uart_midi_start(void) {
 void uart_midi_get_stats(uart_midi_stats_t *out) { *out = stats; }
 
 // Nothing is needed but the loopback cable. The OUT tip is made to sink current (a run of 0x00 bytes holds it low 9
-// bit-times out of 10) while the IN pin is sampled, with the chip's pull-down on so a pin that is not on the 6N138
-// cannot read high by accident:
-//   IN high at idle    -> the opto's 1k pull-up is there: the IN pin is connected;
-//   IN dips while low  -> the opto conducts: OUT tip -> jack -> cable -> jack -> opto -> IN pin works.
-// Anything else names the break: no pull-up is the pin off the opto (or the 3.3 V it pulls up to missing), no dip is
-// no current path (the cable not carrying the RING, or no 3.3 V source).
+// bit-times out of 10) while the TIP and the IN pin are sampled, with the chip's pull-down on the IN pin so a pin
+// that is not on the 6N138 cannot read high by accident:
+//   TIP dips          -> the UART's bytes reach the pin: the OUT side is alive;
+//   RING reads 1      -> the Type A current source is on the ring, not shorted to ground;
+//   IN high at idle   -> the opto's 1k pull-up is there: the IN pin is connected;
+//   IN dips while low -> the opto conducts: OUT tip -> jack -> cable -> jack -> opto -> IN pin works.
+// Anything else names the break.
 void uart_midi_loop_test(void) {
     const board_t *b = board();
     if (b->midi_tx == GPIO_NUM_NC || b->midi_rx == GPIO_NUM_NC) {
         printf("trs loop: this board has no TRS pins\n");
         return;
     }
-    if (b->trs_ring != GPIO_NUM_NC) printf("trs loop: RING GPIO%d is %d\n", b->trs_ring, gpio_get_level(b->trs_ring));
+    // gpio_config(GPIO_MODE_OUTPUT) leaves the pad's input path off, so gpio_get_level() reads 0 for the two OUT
+    // pins no matter what they drive. Turn the input path on; the output side is not touched.
+    gpio_input_enable(b->midi_tx);
+    if (b->trs_ring != GPIO_NUM_NC) gpio_input_enable(b->trs_ring);
+    vTaskDelay(pdMS_TO_TICKS(2));
+
+    int ring = b->trs_ring == GPIO_NUM_NC ? -1 : gpio_get_level(b->trs_ring);
+    int tip_idle = gpio_get_level(b->midi_tx);
 
     gpio_set_pull_mode(b->midi_rx, GPIO_PULLDOWN_ONLY);  // the UART keeps the pin; only its pull changes
     vTaskDelay(pdMS_TO_TICKS(2));
-    int idle = gpio_get_level(b->midi_rx);
+    int in_idle = gpio_get_level(b->midi_rx);
 
     static const uint8_t zeros[32] = {0};
     uart_write_bytes(MIDI_UART, zeros, sizeof zeros);  // ~10 ms with the OUT tip low 9 bit-times out of 10
-    int low = 0;
+    int tip_low = 0, in_low = 0;
     int64_t until = esp_timer_get_time() + 12000;
-    while (esp_timer_get_time() < until) low += !gpio_get_level(b->midi_rx);
+    while (esp_timer_get_time() < until) {
+        tip_low += !gpio_get_level(b->midi_tx);
+        in_low += !gpio_get_level(b->midi_rx);
+    }
     uart_wait_tx_done(MIDI_UART, pdMS_TO_TICKS(100));
     gpio_set_pull_mode(b->midi_rx, GPIO_PULLUP_ONLY);  // back to what uart_set_pin() left on the pin
     vTaskDelay(pdMS_TO_TICKS(1));
 
-    printf("trs loop: IN GPIO%d reads %s at idle and dipped %d time(s) while the OUT tip was driven low\n", b->midi_rx,
-           idle ? "HIGH" : "LOW", low);
-    if (!idle)
+    if (b->trs_ring != GPIO_NUM_NC)
+        printf("trs loop: RING GPIO%d reads %d (1 = the Type A current source is on the ring)\n", b->trs_ring, ring);
+    printf("trs loop: TIP GPIO%d idle %d, dipped %d time(s) while sending\n", b->midi_tx, tip_idle, tip_low);
+    printf("trs loop: IN GPIO%d idle %d, dipped %d time(s) while the TIP was low\n", b->midi_rx, in_idle, in_low);
+
+    if (!tip_low)
+        printf("trs loop: FAIL - the UART's bytes do not reach GPIO%d\n", b->midi_tx);
+    else if (!in_idle)
         printf(
             "trs loop: FAIL - no 1k pull-up on GPIO%d: the pin is off the 6N138, or the 3.3 V it pulls up to is "
             "missing\n",
             b->midi_rx);
-    else if (!low)
-        printf("trs loop: FAIL - the opto never conducts: no current path (the cable's RING, or the 3.3 V source)\n");
+    else if (!in_low)
+        printf(
+            "trs loop: FAIL - the opto never conducts: no current path (the cable's RING, or the ring not at 3.3 V)\n");
     else
         printf("trs loop: PASS - OUT tip -> jack -> cable -> jack -> opto -> GPIO%d\n", b->midi_rx);
 }
