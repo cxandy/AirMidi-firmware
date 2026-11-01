@@ -1,12 +1,7 @@
-# A bare ESP32-S3 on a board of its own, with its TRS port hanging straight off two pins (build.sh s3direct):
-#  - TRS TIP on the S3's GPIO14, the data out in the default Type A
-#  - TRS RING on the S3's GPIO15, held high in board_init() as Type A's current source
-#  - TRS IN on the S3's GPIO21, through the 6N137
-# Each of the two output pins has a 22 ohm resistor in series.
-# The module is an ESP32-S3-WROOM-1-N16R8 (16 MB flash, 8 MB OPI PSRAM). The 4 MB partition layout stays on
-# purpose: it is frozen for OTA and shared with the other boards, and the image does not need the extra flash.
-# PSRAM (octal) comes from sdkconfig.defaults.esp32s3, which already selects CONFIG_SPIRAM_MODE_OCT.
-# The console is TinyUSB's serial port on the native USB, as sdkconfig.defaults.esp32s3 sets it (CONSOLE_NONE):
-# USB-Serial-JTAG and TinyUSB share the PHY, and anything written to USB-Serial-JTAG after TinyUSB starts hangs
-# the chip. There is no USB-UART bridge on the board.
+# A bare ESP32-S3 on a board of its own (build.sh s3direct): TRS TIP on GPIO14 (the data, Type A), RING on GPIO15
+# (held high in board_init() as the current source), IN through the 6N137 on GPIO21; 22 ohm in series on each output
+# pin. The module is an ESP32-S3-WROOM-1-N16R8, but the 4 MB partition layout stays: it is frozen for OTA and shared
+# with the other boards. The console is TinyUSB's serial port on the native USB (CONFIG_ESP_CONSOLE_NONE, from
+# sdkconfig.defaults.esp32s3): USB-Serial-JTAG and TinyUSB share the PHY, and anything written there after TinyUSB
+# starts hangs the chip. There is no USB-UART bridge on the board.
 CONFIG_AIRMIDI_BOARD_DIRECT_S3=y

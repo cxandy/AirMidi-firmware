@@ -26,11 +26,9 @@ menu "airmidi board"
             bool "Bare ESP32-S3 with a TRS port of its own"
             depends on IDF_TARGET_ESP32S3
             help
-                A bare ESP32-S3 on a board of its own, with the TRS port hanging straight off two pins, each
-                through a 22 ohm series resistor: TIP on the S3's GPIO14 and RING on the S3's GPIO15. A TRS port's
-                type is which of the two carries the data, so holding the RING high and running the UART on the TIP
-                is Type A, which is what the firmware does. Type B (the two pins swapped) is pending. The input is a
-                6N137 optocoupler on the S3's GPIO21.
+                A bare ESP32-S3 with its TRS port straight off two pins, 22 ohm in series on each: TIP on GPIO14,
+                RING on GPIO15 (held high, so the data is on the TIP: Type A), and the input through a 6N137 on
+                GPIO21. Type B (the two pins swapped) is pending.
     endchoice
 
 endmenu
