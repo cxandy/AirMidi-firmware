@@ -270,7 +270,7 @@ void app_main(void) {
                                           : LED_ADVERTISING);
 
         int c = getchar();              // console: 's' counters, 'i' image info, 'P'/'N'/'S' mode, 'm' merge test hook,
-                                        // '0'-'2' power mode, 'B' bootloader (S3)
+                                        // 'g' TRS loop test, '0'-'2' power mode, 'B' bootloader (S3)
         if (c == EOF) clearerr(stdin);  // no input yet; on a UART console EOF would otherwise stick
         // TinyUSB's console drops output nobody reads (a short write), which leaves stdout in its error state for
         // good: the box ran on but never printed again (S3). Clear it, so output resumes when someone reads.
@@ -283,6 +283,7 @@ void app_main(void) {
         if (c == 'd') ci_scan(false);  // MIDI-CI scan ('D': read everything again)
         if (c == 'D') ci_scan(true);
         if (c == 'm') xTaskCreate(inject_task, "inject", 2048, NULL, 5, NULL);
+        if (c == 'g') uart_midi_loop_test();                // hardware bring-up: is the TRS input on its output?
         if (c >= '0' && c <= '2') power_set_mode(c - '0');  // power modes, for measuring ('2' needs RESET after)
         if (c == 'B') usb_midi_bootloader();                // S3: restart into the ROM bootloader (flashing over USB)
         if (c == 'E') toggle_espnow();
