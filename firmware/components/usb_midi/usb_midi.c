@@ -6,10 +6,9 @@
 #include "airmidi/midi1.h"
 #include "airmidi/usbmidi.h"
 #include "bus.h"
-#include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_mac.h"
-#include "esp_private/usb_phy.h"
+#include "esp_rom_sys.h"
 #include "esp_system.h"
 #include "soc/rtc_cntl_reg.h"
 #include "tinyusb.h"
@@ -20,11 +19,6 @@
 static const char *TAG = "usb";
 
 #define BACKLOG 32  // packets waiting for room in TinyUSB's FIFO
-
-// Bring-up: the RTC USB register as the last restart found it. RTC memory survives a restart, so the boot after
-// one can report whether something had left it dirty; the magic keeps a fresh boot from reading junk.
-#define USB_CONF_SEEN 0x55534231u
-static RTC_NOINIT_ATTR uint32_t usb_conf_magic, usb_conf_seen;
 
 enum { ITF_CDC, ITF_CDC_DATA, ITF_MIDI, ITF_MIDI_STREAMING, ITF_COUNT };
 enum { EP_CDC_NOTIF = 0x81, EP_CDC_OUT = 0x02, EP_CDC_IN = 0x82, EP_MIDI_OUT = 0x03, EP_MIDI_IN = 0x83 };
@@ -133,24 +127,7 @@ static void line_state(int itf, cdcacm_event_t *e) {
     }
 }
 
-// Every restart: give the internal USB PHY back to the chip's USB-Serial-JTAG. A restart resets neither the USB
-// Wrap block nor the RTC register that muxes the PHY between the two controllers, so after TinyUSB has run they
-// both still point at the OTG, and the ROM's USB-Serial-JTAG never enumerated: the host kept its old port, dead.
-//
-// So do what esp_tinyusb's own uninstall does when it wants the PHY back: uninstall the driver, which stops the OTG
-// stack and lets go of the PHY, then claim the PHY for the USB-Serial-JTAG. That claim resets the USB Wrap block and
-// writes RTC_CNTL_USB_CONF_REG.SW_USB_PHY_SEL = 0, the mux the ROM's USB-Serial-JTAG needs after a restart.
-static void give_back_phy(void) {
-    usb_conf_seen = REG_READ(RTC_CNTL_USB_CONF_REG);  // bring-up: what the OTG driver left behind
-    usb_conf_magic = USB_CONF_SEEN;
-    tinyusb_driver_uninstall();
-    usb_phy_config_t cfg = {.controller = USB_PHY_CTRL_SERIAL_JTAG};
-    usb_phy_handle_t jtag = NULL;
-    usb_new_phy(&cfg, &jtag);
-}
-
 void usb_midi_start(const char *name) {
-    esp_register_shutdown_handler(give_back_phy);
     snprintf(product, sizeof product, "%s", name);
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_BASE);
@@ -169,21 +146,22 @@ void usb_midi_start(const char *name) {
     // The console (log and commands) moves here. A dev kit's UART console keeps what comes before this and panics.
     ESP_ERROR_CHECK(tinyusb_console_init(TINYUSB_CDC_ACM_0));
     ESP_LOGI(TAG, "USB MIDI device \"%s\", console on its serial port", product);
-    if (usb_conf_magic == USB_CONF_SEEN) {  // bring-up
-        ESP_LOGI(TAG, "last restart found RTC_CNTL_USB_CONF_REG 0x%08x", (unsigned)usb_conf_seen);
-        usb_conf_magic = 0;
-    }
 }
 
 void usb_midi_get_stats(usb_midi_stats_t *out) { *out = stats; }
 
 void usb_midi_bootloader(void) {
     // No log line first: the console is this very CDC, and writing to it while the host has closed the port (the
-    // caller sends 'B' and goes away) blocked here for good. The download bit makes the ROM stay in download mode
-    // after the restart; give_back_phy() has already pointed the PHY at the USB-Serial-JTAG by then, which is what
-    // makes that download mode enumerate on this port.
+    // caller sends 'B' and goes away) blocked here for good.
+    //
+    // Two things the ROM's download mode needs that esp_restart() cannot give it. The RTC register that muxes the
+    // internal PHY between the OTG and the USB-Serial-JTAG survives a restart, and the OTG driver left it pointing at
+    // the OTG, so point it back: software mux, sw_usb_phy_sel = 0, which is the USB-Serial-JTAG. And the OTG's
+    // registers are not at their power-on values either, which is why esp_restart(), a CPU reset, never made the
+    // ROM's USB come up. A system reset does reset them, and leaves the RTC domain (the download bit) alone.
+    REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL);
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
-    esp_restart();
+    esp_rom_software_reset_system();
 }
 
 // Console 'R': the same restart without the ROM download bit, so the box comes back as itself. A bring-up key: it
