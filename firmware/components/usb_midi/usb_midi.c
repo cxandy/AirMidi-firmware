@@ -8,8 +8,10 @@
 #include "bus.h"
 #include "esp_log.h"
 #include "esp_mac.h"
-#include "esp_private/periph_ctrl.h"
+#include "esp_rom_sys.h"
 #include "esp_system.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "soc/rtc_cntl_reg.h"
 #include "soc/usb_serial_jtag_reg.h"
 #include "tinyusb.h"
@@ -132,13 +134,25 @@ static void line_state(int itf, cdcacm_event_t *e) {
 // domain and survives a restart; left on USB OTG, the next boot's console output waited forever for a USB-Serial-
 // JTAG nobody could reach, and the box never came back (found on the dev kit). Restarts into the ROM bootloader need
 // it too: the bootloader talks USB-Serial-JTAG.
+//
+// Only the pads and the PHY selection are touched, not the USB OTG peripheral itself: a chip reset reinitialises
+// that one anyway, and resetting and clock-gating it from a running app leaves the console and MIDI writing into a
+// controller that is gone before the chip gets around to resetting.
 static void give_back_phy(void) {
-    periph_module_reset(PERIPH_USB_MODULE);
-    periph_module_disable(PERIPH_USB_MODULE);
     CLEAR_PERI_REG_MASK(RTC_CNTL_USB_CONF_REG,
                         RTC_CNTL_SW_HW_USB_PHY_SEL | RTC_CNTL_SW_USB_PHY_SEL | RTC_CNTL_USB_PAD_ENABLE);
     CLEAR_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_PHY_SEL);  // the internal PHY
     SET_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_USB_PAD_ENABLE);
+}
+
+// Restart the chip from here, without esp_restart()'s way there: that one runs the shutdown handlers, suspends the
+// scheduler, disables the caches, resets and stalls the other core and only then resets, and none of it is what
+// leaving the app needs. The ROM's own system reset does the whole job in one call, from whatever the calling task
+// is doing, and the RTC domain (which holds the download-boot flag and the PHY selection) survives it.
+static void reset_now(void) {
+    give_back_phy();
+    esp_rom_software_reset_system();
+    for (;;) vTaskDelay(portMAX_DELAY);  // the reset does not return
 }
 
 void usb_midi_start(const char *name) {
@@ -167,8 +181,11 @@ void usb_midi_get_stats(usb_midi_stats_t *out) { *out = stats; }
 
 void usb_midi_bootloader(void) {
     // No log line first: the console is this very CDC, and writing to it while the host has closed the port (the
-    // caller sends 'B' and goes away) blocked here, so esp_restart() never ran and the box was left running with a
-    // dead serial port. Set the flag and restart; the next boot's log says where we went.
+    // caller sends 'B' and goes away) blocked here for good.
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
-    esp_restart();
+    reset_now();
 }
+
+// Console 'R': the same restart without the ROM download bit, so the box comes back as itself. A bring-up key: it
+// is the quickest way to see whether the restart path works, without going through a flash.
+void usb_midi_restart(void) { reset_now(); }

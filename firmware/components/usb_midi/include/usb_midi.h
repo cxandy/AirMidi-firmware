@@ -19,3 +19,7 @@ void usb_midi_get_stats(usb_midi_stats_t *out);
 
 // Restart into the ROM bootloader, which comes up on USB-Serial-JTAG for esptool (the S3; nothing elsewhere).
 void usb_midi_bootloader(void);
+
+// Restart the chip now, staying an ordinary boot (no ROM download bit): the box comes back as itself. A bring-up
+// key, for checking that the restart path works without a flash.
+void usb_midi_restart(void);
