@@ -9,10 +9,7 @@
 #include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_mac.h"
-#include "esp_rom_sys.h"
 #include "esp_system.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "soc/rtc_cntl_reg.h"
 #include "soc/usb_serial_jtag_reg.h"
 #include "tinyusb.h"
@@ -153,16 +150,6 @@ static void give_back_phy(void) {
     SET_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_USB_PAD_ENABLE);
 }
 
-// Restart the chip from here, without esp_restart()'s way there: that one runs the shutdown handlers, suspends the
-// scheduler, disables the caches, resets and stalls the other core and only then resets, and none of it is what
-// leaving the app needs. The ROM's own system reset does the whole job in one call, from whatever the calling task
-// is doing, and the RTC domain (which holds the download-boot flag and the PHY selection) survives it.
-static void reset_now(void) {
-    give_back_phy();
-    esp_rom_software_reset_system();
-    for (;;) vTaskDelay(portMAX_DELAY);  // the reset does not return
-}
-
 void usb_midi_start(const char *name) {
     esp_register_shutdown_handler(give_back_phy);
     snprintf(product, sizeof product, "%s", name);
@@ -193,11 +180,13 @@ void usb_midi_get_stats(usb_midi_stats_t *out) { *out = stats; }
 
 void usb_midi_bootloader(void) {
     // No log line first: the console is this very CDC, and writing to it while the host has closed the port (the
-    // caller sends 'B' and goes away) blocked here for good.
+    // caller sends 'B' and goes away) blocked here for good. Set the flag and restart through esp_restart(), which
+    // hands the next boot the clock tree, caches and peripherals of a hard reset: the ROM's USB-Serial-JTAG comes up
+    // on those, and a bare system reset leaves it dead.
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
-    reset_now();
+    esp_restart();
 }
 
 // Console 'R': the same restart without the ROM download bit, so the box comes back as itself. A bring-up key: it
 // is the quickest way to see whether the restart path works, without going through a flash.
-void usb_midi_restart(void) { reset_now(); }
+void usb_midi_restart(void) { esp_restart(); }
