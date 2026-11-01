@@ -50,17 +50,11 @@ static const board_t the_board = {
 };
 
 #elif CONFIG_AIRMIDI_BOARD_DIRECT_S3
-// A bare ESP32-S3 on a board of its own, with the TRS port hanging straight off two pins, each through a 22 ohm
-// series resistor:
-//  - TRS TIP: the S3's GPIO14, the data out on a Type A port
-//  - TRS RING: the S3's GPIO15, the data out on a Type B port
-//  - MIDI IN (RX): the S3's GPIO21, through the board's 6N137
-// A TRS port's type is which of the TIP and the RING carries the data, not a separate switch line: Type A puts the
-// data on the TIP and holds the RING high as the current source, Type B is the same with the two pins swapped. The
-// firmware holds the RING high and keeps the UART on the TIP, which is Type A; Type B (the UART on the RING with
-// the TIP held high) is not implemented yet.
-// Power and flashing ride the S3's native USB port (there is no USB-UART bridge on the board); the console moves
-// to TinyUSB's serial port once the app starts, as on every S3 board (sdkconfig.defaults.esp32s3).
+// A bare ESP32-S3 with its TRS port hanging straight off two pins, each through a 22 ohm series resistor: TIP on
+// GPIO14, RING on GPIO15, and the input through a 6N137 on GPIO21. A TRS port's type is which pin carries the data:
+// the firmware holds the RING high and keeps the UART on the TIP, which is Type A (Type B, the two swapped, is not
+// implemented yet). Power and flashing ride the native USB port (there is no USB-UART bridge); the console moves to
+// TinyUSB's serial port once the app starts, as on every S3 board (sdkconfig.defaults.esp32s3).
 static const board_t the_board = {
     .name = "bare ESP32-S3 with a TRS port",
     .midi_tx = GPIO_NUM_14,  // TRS TIP: the data out on a Type A port
@@ -94,7 +88,6 @@ void board_init(void) {
     if (the_board.trs_ring != GPIO_NUM_NC) {
         // Hold the RING high and leave the UART on the TIP: a Type A port, so the board can drive a MIDI OUT on the
         // 3.5mm jack. A Type B port would hold the TIP high and put the data on the RING instead.
-        // TODO: Type B is pending.
         gpio_config_t sw = {.pin_bit_mask = 1ULL << the_board.trs_ring, .mode = GPIO_MODE_OUTPUT};
         gpio_config(&sw);
         gpio_set_level(the_board.trs_ring, 1);
