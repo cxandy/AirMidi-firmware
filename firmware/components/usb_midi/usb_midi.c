@@ -142,13 +142,13 @@ static void line_state(int itf, cdcacm_event_t *e) {
 // into the next boot. Left on OTG, the console waited forever for a USB-Serial-JTAG nobody could reach, and a
 // restart into the ROM bootloader never enumerated at all: the host kept its old port, dead.
 //
-// Write the register back to its power-on value, which is the state a cold boot hands the ROM, and let the chip
-// reset the USB block instead of skipping it. The two USB-Serial-JTAG pads are set as well, for the restart that
-// does not follow with a reset.
+// Write the register back to its power-on value, then mux the internal PHY to the USB-Serial-JTAG by hand: software
+// control, and sw_usb_phy_sel = 0. Left to the hardware (0), the mux is not the one the ROM's USB-Serial-JTAG needs
+// after a restart.
 static void give_back_phy(void) {
     usb_conf_seen = REG_READ(RTC_CNTL_USB_CONF_REG);  // bring-up: what the OTG driver left behind
     usb_conf_magic = USB_CONF_SEEN;
-    REG_WRITE(RTC_CNTL_USB_CONF_REG, 0);
+    REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL);
     CLEAR_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_PHY_SEL);  // the internal PHY
     SET_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_USB_PAD_ENABLE);
 }
