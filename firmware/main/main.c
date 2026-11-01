@@ -271,7 +271,7 @@ void app_main(void) {
 
         int c = getchar();              // console: 's' counters, 'i' image info, 'P'/'N'/'S' mode, 'm' merge test hook,
                                         // 'g' TRS loop test, 'l' steady low on the TRS OUT for a meter, '0'-'2' power
-                                        // mode, 'R' restart, 'B' bootloader (S3)
+                                        // mode, 'B' bootloader (S3)
         if (c == EOF) clearerr(stdin);  // no input yet; on a UART console EOF would otherwise stick
         // TinyUSB's console drops output nobody reads (a short write), which leaves stdout in its error state for
         // good: the box ran on but never printed again (S3). Clear it, so output resumes when someone reads.
@@ -288,7 +288,6 @@ void app_main(void) {
         if (c == 'l') uart_midi_hold_low(60);  // hardware bring-up: a steady low on the OUT tip, for a meter
         if (c >= '0' && c <= '2') power_set_mode(c - '0');  // power modes, for measuring ('2' needs RESET after)
         if (c == 'B') usb_midi_bootloader();                // S3: restart into the ROM bootloader (flashing over USB)
-        if (c == 'R') usb_midi_restart();                   // S3: a plain restart, for checking the restart path
         if (c == 'E') toggle_espnow();
         vTaskDelay(pdMS_TO_TICKS(50));
     }

@@ -166,7 +166,3 @@ void usb_midi_bootloader(void) {
     REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL);
     esp_restart();
 }
-
-// Console 'R': the same restart without the ROM download bit, so the box comes back as itself. A bring-up key: it
-// is the quickest way to see whether the restart path works, without going through a flash.
-void usb_midi_restart(void) { esp_restart(); }
