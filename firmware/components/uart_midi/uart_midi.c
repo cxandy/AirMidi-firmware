@@ -163,3 +163,38 @@ void uart_midi_loop_test(void) {
     else
         printf("trs loop: PASS - OUT tip -> jack -> cable -> jack -> opto -> GPIO%d\n", b->midi_rx);
 }
+
+// Console 'l': the same loop, but the OUT tip is held at a steady low instead of pulsed, so a meter reads the loop
+// rather than an average of a pulse train: the tip should read 0 V, the opto's anode about 2 V (3.3 V minus the LED)
+// and its cathode about 0 V, while the IN pin stays low for the whole window. A tip that is not 0 V is the pin, an
+// anode at 3.3 V is no current (an open loop or a dead LED), and a low anode with the IN pin still high is a dead
+// opto. The UART's TX is detached from the pad for the window (the driver keeps draining its buffer into nothing)
+// and put back afterwards.
+void uart_midi_hold_low(int seconds) {
+    const board_t *b = board();
+    if (b->midi_tx == GPIO_NUM_NC || b->midi_rx == GPIO_NUM_NC) {
+        printf("hold low: this board has no TRS pins\n");
+        return;
+    }
+    uart_wait_tx_done(MIDI_UART, pdMS_TO_TICKS(200));  // never cut a byte in half
+    gpio_reset_pin(b->midi_tx);
+    gpio_set_direction(b->midi_tx, GPIO_MODE_OUTPUT);
+    gpio_set_level(b->midi_tx, 0);
+    gpio_input_enable(b->midi_tx);  // an output pad's input path is off: without this the read-back is always 0
+    gpio_set_pull_mode(b->midi_rx, GPIO_PULLDOWN_ONLY);  // a pin off the 6N138 must not read high by accident
+    vTaskDelay(pdMS_TO_TICKS(2));
+
+    printf("hold low: TIP GPIO%d reads %d for %d s, measure now\n", b->midi_tx, gpio_get_level(b->midi_tx), seconds);
+    int samples = 0, low = 0;
+    int64_t until = esp_timer_get_time() + (int64_t)seconds * 1000000;
+    while (esp_timer_get_time() < until) {
+        low += !gpio_get_level(b->midi_rx);
+        samples++;
+        vTaskDelay(1);
+    }
+    printf("hold low: IN GPIO%d read low in %d of %d samples\n", b->midi_rx, low, samples);
+
+    gpio_set_pull_mode(b->midi_rx, GPIO_PULLUP_ONLY);  // back to what uart_set_pin() left on the pin
+    uart_set_pin(MIDI_UART, b->midi_tx, b->midi_rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    printf("hold low: done, the UART has the TIP back\n");
+}

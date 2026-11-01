@@ -16,3 +16,8 @@ void uart_midi_get_stats(uart_midi_stats_t *out);
 // samples the IN pin with the chip's pull-down on, then prints which part of the loop (jack, cable, RING, 3.3 V, the
 // 6N138's pull-up) is missing. The box prints the verdict; nothing needs to be plugged in but the loopback cable.
 void uart_midi_loop_test(void);
+
+// Hardware bring-up, for a meter: holds the OUT tip at a steady low for `seconds`, sampling the IN pin meanwhile, so
+// the current loop can be read as a DC state (tip 0 V, anode ~2 V, cathode ~0 V) instead of a pulse train. Prints
+// what the IN pin did and puts the UART back on the tip.
+void uart_midi_hold_low(int seconds);
