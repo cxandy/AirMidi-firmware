@@ -8,13 +8,15 @@
 #include "bus.h"
 #include "esp_log.h"
 #include "esp_mac.h"
-#include "esp_rom_sys.h"
 #include "esp_system.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "soc/rtc_cntl_reg.h"
 #include "tinyusb.h"
 #include "tinyusb_cdc_acm.h"
 #include "tinyusb_console.h"
 #include "tinyusb_default_config.h"
+#include "tusb.h"
 
 static const char *TAG = "usb";
 
@@ -154,14 +156,15 @@ void usb_midi_bootloader(void) {
     // No log line first: the console is this very CDC, and writing to it while the host has closed the port (the
     // caller sends 'B' and goes away) blocked here for good.
     //
-    // Two things the ROM's download mode needs that esp_restart() cannot give it. The RTC register that muxes the
-    // internal PHY between the OTG and the USB-Serial-JTAG survives a restart, and the OTG driver left it pointing at
-    // the OTG, so point it back: software mux, sw_usb_phy_sel = 0, which is the USB-Serial-JTAG. And the OTG's
-    // registers are not at their power-on values either, which is why esp_restart(), a CPU reset, never made the
-    // ROM's USB come up. A system reset does reset them, and leaves the RTC domain (the download bit) alone.
-    REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL);
+    // The host has to see the box leave the bus, or it never asks the ROM's USB-Serial-JTAG anything: it keeps the
+    // port it has. Drop the D+ pull-up and give the host a moment to notice, then hand the internal PHY to the
+    // USB-Serial-JTAG (the RTC register that muxes it survives the restart, and the OTG driver left it on the OTG),
+    // set the ROM download bit, and restart.
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
-    esp_rom_software_reset_system();
+    tud_disconnect();
+    vTaskDelay(pdMS_TO_TICKS(200));
+    REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL);
+    esp_restart();
 }
 
 // Console 'R': the same restart without the ROM download bit, so the box comes back as itself. A bring-up key: it
