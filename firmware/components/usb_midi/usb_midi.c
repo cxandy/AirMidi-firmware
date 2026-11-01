@@ -9,9 +9,9 @@
 #include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_mac.h"
+#include "esp_private/usb_phy.h"
 #include "esp_system.h"
 #include "soc/rtc_cntl_reg.h"
-#include "soc/usb_serial_jtag_reg.h"
 #include "tinyusb.h"
 #include "tinyusb_cdc_acm.h"
 #include "tinyusb_console.h"
@@ -133,21 +133,20 @@ static void line_state(int itf, cdcacm_event_t *e) {
     }
 }
 
-// Every restart: give the USB PHY back to the chip's USB-Serial-JTAG first. One RTC-domain register holds all of
-// it: which block the internal PHY is muxed to, the pad and DP/DM pull overrides, and the mask that lets the USB
-// block skip the chip reset entirely. RTC registers survive a restart, so whatever the OTG driver left there went
-// into the next boot. Left on OTG, the console waited forever for a USB-Serial-JTAG nobody could reach, and a
-// restart into the ROM bootloader never enumerated at all: the host kept its old port, dead.
+// Every restart: give the internal USB PHY back to the chip's USB-Serial-JTAG. A restart resets neither the USB
+// Wrap block nor the RTC register that muxes the PHY between the two controllers, so after TinyUSB has run they
+// both still point at the OTG, and the ROM's USB-Serial-JTAG never enumerated: the host kept its old port, dead.
 //
-// Write the register back to its power-on value, then mux the internal PHY to the USB-Serial-JTAG by hand: software
-// control, and sw_usb_phy_sel = 0. Left to the hardware (0), the mux is not the one the ROM's USB-Serial-JTAG needs
-// after a restart.
+// So do what esp_tinyusb's own uninstall does when it wants the PHY back: uninstall the driver, which stops the OTG
+// stack and lets go of the PHY, then claim the PHY for the USB-Serial-JTAG. That claim resets the USB Wrap block and
+// writes RTC_CNTL_USB_CONF_REG.SW_USB_PHY_SEL = 0, the mux the ROM's USB-Serial-JTAG needs after a restart.
 static void give_back_phy(void) {
     usb_conf_seen = REG_READ(RTC_CNTL_USB_CONF_REG);  // bring-up: what the OTG driver left behind
     usb_conf_magic = USB_CONF_SEEN;
-    REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL);
-    CLEAR_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_PHY_SEL);  // the internal PHY
-    SET_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_USB_PAD_ENABLE);
+    tinyusb_driver_uninstall();
+    usb_phy_config_t cfg = {.controller = USB_PHY_CTRL_SERIAL_JTAG};
+    usb_phy_handle_t jtag = NULL;
+    usb_new_phy(&cfg, &jtag);
 }
 
 void usb_midi_start(const char *name) {
@@ -180,9 +179,9 @@ void usb_midi_get_stats(usb_midi_stats_t *out) { *out = stats; }
 
 void usb_midi_bootloader(void) {
     // No log line first: the console is this very CDC, and writing to it while the host has closed the port (the
-    // caller sends 'B' and goes away) blocked here for good. Set the flag and restart through esp_restart(), which
-    // hands the next boot the clock tree, caches and peripherals of a hard reset: the ROM's USB-Serial-JTAG comes up
-    // on those, and a bare system reset leaves it dead.
+    // caller sends 'B' and goes away) blocked here for good. The download bit makes the ROM stay in download mode
+    // after the restart; give_back_phy() has already pointed the PHY at the USB-Serial-JTAG by then, which is what
+    // makes that download mode enumerate on this port.
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
     esp_restart();
 }
@@ -190,11 +189,3 @@ void usb_midi_bootloader(void) {
 // Console 'R': the same restart without the ROM download bit, so the box comes back as itself. A bring-up key: it
 // is the quickest way to see whether the restart path works, without going through a flash.
 void usb_midi_restart(void) { esp_restart(); }
-
-// Console 'V': set the ROM download flag and report what the register says, without restarting. A bring-up key: it
-// tells apart a register write that goes wrong from the restart that follows it.
-void usb_midi_flag_download(void) {
-    ESP_LOGI(TAG, "option1 before 0x%08x", (unsigned)REG_READ(RTC_CNTL_OPTION1_REG));
-    REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
-    ESP_LOGI(TAG, "option1 after 0x%08x", (unsigned)REG_READ(RTC_CNTL_OPTION1_REG));
-}

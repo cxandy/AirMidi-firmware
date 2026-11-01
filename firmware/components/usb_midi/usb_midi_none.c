@@ -8,4 +8,3 @@ void usb_midi_start(const char *name) { (void)name; }
 void usb_midi_get_stats(usb_midi_stats_t *out) { memset(out, 0, sizeof *out); }
 void usb_midi_bootloader(void) {}
 void usb_midi_restart(void) { esp_restart(); }  // no USB PHY to hand back here
-void usb_midi_flag_download(void) {}
