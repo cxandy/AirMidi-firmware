@@ -1,8 +1,8 @@
 #!/bin/bash
 # Build (and optionally flash) the firmware for one board, each in its own build directory:
 #   ./build.sh [c6|s3|s3kit|s3direct] [flash] [monitor]   default c6; PORT=/dev/cu.usbmodemXXXX to pick the port
-#   (s3kit: a bare ESP32-S3-DevKitC-1 instead of the receiver PCB; s3direct: the receiver's jacks driven straight
-#    from the S3: TRS TIP on J2, TRS IN on J3, the port's type switch on J2's RING)
+#   (s3kit: a bare ESP32-S3-DevKitC-1 instead of the receiver PCB; s3direct: a bare S3 on a board of its own, its TRS
+#    port straight off GPIO14 (TIP) and GPIO15 (RING), 22 ohm in series on each)
 set -e
 cd "$(dirname "$0")"
 board=${1:-c6}

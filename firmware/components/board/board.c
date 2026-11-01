@@ -50,10 +50,11 @@ static const board_t the_board = {
 };
 
 #elif CONFIG_AIRMIDI_BOARD_DIRECT_S3
-// The receiver's rev A jacks driven straight from an ESP32-S3 on a bare board:
-//  - TRS TIP (J2): the S3's GPIO14, the data out on a Type A port
-//  - TRS RING (J2): the S3's GPIO15, the data out on a Type B port
-//  - MIDI IN (J3, RX): the S3's GPIO21, through the 6N138
+// A bare ESP32-S3 on a board of its own, with the TRS port hanging straight off two pins, each through a 22 ohm
+// series resistor:
+//  - TRS TIP: the S3's GPIO14, the data out on a Type A port
+//  - TRS RING: the S3's GPIO15, the data out on a Type B port
+//  - MIDI IN (RX): the S3's GPIO21, through the board's 6N137
 // A TRS port's type is which of the TIP and the RING carries the data, not a separate switch line: Type A puts the
 // data on the TIP and holds the RING high as the current source, Type B is the same with the two pins swapped. The
 // firmware holds the RING high and keeps the UART on the TIP, which is Type A; Type B (the UART on the RING with
@@ -61,9 +62,9 @@ static const board_t the_board = {
 // Power and flashing ride the S3's native USB port (there is no USB-UART bridge on the board); the console moves
 // to TinyUSB's serial port once the app starts, as on every S3 board (sdkconfig.defaults.esp32s3).
 static const board_t the_board = {
-    .name = "receiver's rev A TRS on a bare ESP32-S3",
+    .name = "bare ESP32-S3 with a TRS port",
     .midi_tx = GPIO_NUM_14,  // TRS TIP: the data out on a Type A port
-    .midi_rx = GPIO_NUM_21,  // TRS RX (J3 IN)
+    .midi_rx = GPIO_NUM_21,  // TRS IN, through the 6N137
     .led = GPIO_NUM_NC,      // no LED on the bare board
     .button = GPIO_NUM_0,    // BOOT, with the board's pull-up
     .batt_adc_unit = ADC_UNIT_1,

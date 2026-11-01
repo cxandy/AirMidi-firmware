@@ -37,11 +37,11 @@ The receiver PCB: a Seeed XIAO ESP32-C6 (or ESP32-S3) on headers, MIDI out throu
 through a 6N138 optocoupler, a Li-ion cell with a TP4057 USB-C charger and a TPS63020 buck-boost to 3.3 V, a power
 switch, a button and an LED. An ESP32-S3-DevKitC-1 serves as the second box for USB MIDI and the ESP-NOW link.
 
-A third board reads the receiver's TRS jacks straight from an ESP32-S3 on a bare board
-(`CONFIG_AIRMIDI_BOARD_DIRECT_S3`, `build.sh s3direct`): power and flashing ride the S3's native USB port (USB Serial
-JTAG; there is no USB-UART bridge on the board), and the console moves to TinyUSB's serial port on the same port
-once the app starts. TRS TIP (J2) is the data out on the S3's GPIO14, TRS RING (J2) is on GPIO15 and held high, so
-the port is Type A, and TRS IN (J3) is in on the S3's GPIO21 through the 6N138.
+A third board is a bare ESP32-S3 on a board of its own (`CONFIG_AIRMIDI_BOARD_DIRECT_S3`, `build.sh s3direct`): power
+and flashing ride the S3's native USB port (USB Serial JTAG; there is no USB-UART bridge on the board), and the console
+moves to TinyUSB's serial port on the same port once the app starts. The TRS port hangs straight off two pins, each
+through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15 (held high, so the port is Type A), and the input is a
+6N137 optocoupler on GPIO21.
 
 **[hardware/](hardware)** has the schematic, the KiCad project, Gerbers, BOM and the printable enclosure, with the
 board's revision history: the photo shows rev A, and rev B fixes what its bring-up found.
@@ -173,7 +173,7 @@ app/        Flutter: the Android app, the macOS app with the DAW, and the code t
 
 ```sh
 tools/check.sh                    # what CI runs: host tests, clang-format check, firmware for every board
-firmware/build.sh c6 flash        # build and flash the C6 board (s3 for the XIAO S3, s3kit for an S3 dev kit, s3direct for the receiver's jacks driven straight from the S3)
+firmware/build.sh c6 flash        # build and flash the C6 board (s3 for the XIAO S3, s3kit for an S3 dev kit, s3direct for a bare S3 with its own TRS port)
 cd app && flutter test            # the apps' tests
 flutter build apk --release       # the Android app (flutter build macos --release for the Mac)
 ```

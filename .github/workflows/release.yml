@@ -21,7 +21,7 @@ jobs:
             target: esp32s3
           - board: s3kit  # the ESP32-S3-DevKitC-1 on its own
             target: esp32s3
-          - board: s3direct  # the receiver's rev A jacks driven straight from the S3
+          - board: s3direct  # a bare ESP32-S3 with its own TRS port (22 ohm series on TIP and RING)
             target: esp32s3
     steps:
       - uses: actions/checkout@v5

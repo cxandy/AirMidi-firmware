@@ -108,10 +108,10 @@ void uart_midi_get_stats(uart_midi_stats_t *out) { *out = stats; }
 
 // Nothing is needed but the loopback cable. The OUT tip is made to sink current (a run of 0x00 bytes holds it low 9
 // bit-times out of 10) while the TIP and the IN pin are sampled, with the chip's pull-down on the IN pin so a pin
-// that is not on the 6N138 cannot read high by accident:
+// that is not on the opto cannot read high by accident:
 //   TIP dips          -> the UART's bytes reach the pin: the OUT side is alive;
 //   RING reads 1      -> the Type A current source is on the ring, not shorted to ground;
-//   IN high at idle   -> the opto's 1k pull-up is there: the IN pin is connected;
+//   IN high at idle   -> the opto's pull-up is there: the IN pin is connected;
 //   IN dips while low -> the opto conducts: OUT tip -> jack -> cable -> jack -> opto -> IN pin works.
 // Anything else names the break.
 void uart_midi_loop_test(void) {
@@ -154,7 +154,7 @@ void uart_midi_loop_test(void) {
         printf("trs loop: FAIL - the UART's bytes do not reach GPIO%d\n", b->midi_tx);
     else if (!in_idle)
         printf(
-            "trs loop: FAIL - no 1k pull-up on GPIO%d: the pin is off the 6N138, or the 3.3 V it pulls up to is "
+            "trs loop: FAIL - no pull-up on GPIO%d: the pin is off the opto, or the 3.3 V it pulls up to is "
             "missing\n",
             b->midi_rx);
     else if (!in_low)
@@ -181,7 +181,7 @@ void uart_midi_hold_low(int seconds) {
     gpio_set_direction(b->midi_tx, GPIO_MODE_OUTPUT);
     gpio_set_level(b->midi_tx, 0);
     gpio_input_enable(b->midi_tx);  // an output pad's input path is off: without this the read-back is always 0
-    gpio_set_pull_mode(b->midi_rx, GPIO_PULLDOWN_ONLY);  // a pin off the 6N138 must not read high by accident
+    gpio_set_pull_mode(b->midi_rx, GPIO_PULLDOWN_ONLY);  // a pin off the opto must not read high by accident
     vTaskDelay(pdMS_TO_TICKS(2));
 
     printf("hold low: TIP GPIO%d reads %d for %d s, measure now\n", b->midi_tx, gpio_get_level(b->midi_tx), seconds);

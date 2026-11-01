@@ -31,13 +31,12 @@ second box for USB MIDI and the ESP-NOW cable before a second receiver PCB exist
 LED on the kit), no battery (`batt_adc_channel = -1`: always "on USB"), BOOT (GPIO0) as the button, MIDI UART on
 GPIO17/18 if jacks are wired (43/44 go to the kit's USB-UART bridge, which carries the boot log and panic reports).
 
-**A board wired straight to the receiver's rev A jacks** (`build.sh s3direct`, `CONFIG_AIRMIDI_BOARD_DIRECT_S3`).
-One board without an USB-UART bridge: power and flashing ride the S3's native USB port (USB Serial JTAG), and the
-console moves to TinyUSB's serial port once the app starts (`CONFIG_ESP_CONSOLE_NONE`, as for the other S3 boards).
-The receiver's TRS jacks are on the S3's own pins: TRS TIP (J2, on the S3's GPIO14), TRS RING (J2, on the S3's
-GPIO15) and TRS IN (J3, the board's 6N138 on the S3's GPIO21). A TRS port's type is which of the TIP and the RING
-carries the data, so the firmware holds the RING high and runs the UART on the TIP: Type A. (Type B, the same with
-the two pins swapped, is pending.)
+**A bare ESP32-S3 on a board of its own** (`build.sh s3direct`, `CONFIG_AIRMIDI_BOARD_DIRECT_S3`).
+No USB-UART bridge: power and flashing ride the S3's native USB port (USB Serial JTAG), and the console moves to
+TinyUSB's serial port once the app starts (`CONFIG_ESP_CONSOLE_NONE`, as for the other S3 boards). The TRS port hangs
+straight off two pins, each through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15. A TRS port's type is
+which of the two carries the data, so the firmware holds the RING high and runs the UART on the TIP: Type A. (Type B,
+the same with the two pins swapped, is pending.) The input is a 6N137 optocoupler on GPIO21.
 
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
 whenever Wi-Fi starts. The dev kit and the bare S3 are held to 15 dBm. At 20 dBm none of the dev kit's Wi-Fi

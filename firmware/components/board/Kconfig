@@ -23,14 +23,14 @@ menu "airmidi board"
                 (UART MIDI on GPIO17/18 if you add them), no battery, the BOOT button as the box's button.
 
         config AIRMIDI_BOARD_DIRECT_S3
-            bool "The receiver's rev A jacks, driven straight from the S3"
+            bool "Bare ESP32-S3 with a TRS port of its own"
             depends on IDF_TARGET_ESP32S3
             help
-                A bare ESP32-S3 board with the receiver's rev A TRS jacks on its own pins, driven straight from the
-                chip: TRS TIP (MIDI OUT data, the board's J2) on the S3's GPIO14, TRS RING (the port's type switch)
-                on the S3's GPIO15, and TRS IN (MIDI IN, the board's J3) on the S3's GPIO21 via the 6N138. The port
-                defaults to Type A: the RING is held high, so the TIP is the data out. Type B (the other direction)
-                is pending.
+                A bare ESP32-S3 on a board of its own, with the TRS port hanging straight off two pins, each
+                through a 22 ohm series resistor: TIP on the S3's GPIO14 and RING on the S3's GPIO15. A TRS port's
+                type is which of the two carries the data, so holding the RING high and running the UART on the TIP
+                is Type A, which is what the firmware does. Type B (the two pins swapped) is pending. The input is a
+                6N137 optocoupler on the S3's GPIO21.
     endchoice
 
 endmenu

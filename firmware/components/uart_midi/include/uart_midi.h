@@ -14,7 +14,7 @@ void uart_midi_get_stats(uart_midi_stats_t *out);
 
 // Hardware bring-up: is the TRS port's input really on its output? Holds the OUT tip low (a run of 0x00 bytes) and
 // samples the IN pin with the chip's pull-down on, then prints which part of the loop (jack, cable, RING, 3.3 V, the
-// 6N138's pull-up) is missing. The box prints the verdict; nothing needs to be plugged in but the loopback cable.
+// opto's pull-up) is missing. The box prints the verdict; nothing needs to be plugged in but the loopback cable.
 void uart_midi_loop_test(void);
 
 // Hardware bring-up, for a meter: holds the OUT tip at a steady low for `seconds`, sampling the IN pin meanwhile, so
