@@ -129,6 +129,12 @@ static void line_state(int itf, cdcacm_event_t *e) {
     }
 }
 
+// Into the ROM bootloader: its USB-Serial-JTAG needs the internal PHY, so the mux is chosen in software
+// (sw_hw_usb_phy_sel = 1, sw_usb_phy_sel = 0); left to the hardware it is not the mux the ROM needs after a restart,
+// and the box came up in download mode with no port at all. The whole register is written because the rest has to go
+// back to 0 as well: usb_reset_disable and the DP/DM pad overrides keep the ROM's port from enumerating if left set.
+static void give_back_phy(void) { REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL); }
+
 void usb_midi_start(const char *name) {
     snprintf(product, sizeof product, "%s", name);
     uint8_t mac[6];
@@ -163,6 +169,6 @@ void usb_midi_bootloader(void) {
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
     tud_disconnect();
     vTaskDelay(pdMS_TO_TICKS(200));
-    REG_WRITE(RTC_CNTL_USB_CONF_REG, RTC_CNTL_SW_HW_USB_PHY_SEL);
+    give_back_phy();
     esp_restart();
 }
