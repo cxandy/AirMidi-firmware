@@ -51,16 +51,18 @@ static const board_t the_board = {
 
 #elif CONFIG_AIRMIDI_BOARD_DIRECT_S3
 // The receiver's rev A jacks driven straight from an ESP32-S3 on a bare board:
-//  - TRS TIP (MIDI OUT): the data line, on the S3's GPIO14
-//  - TRS RING (the port's type switch): on the S3's GPIO15
-//  - MIDI IN (RX): on the S3's GPIO21, through the 6N138
-// The port picks its type on the RING: held high, the data out is on the TIP (Type A); held low, on the RING
-// (Type B, not implemented yet). board_init() holds it high, so the board starts as Type A.
+//  - TRS TIP (J2): the S3's GPIO14, the data out on a Type A port
+//  - TRS RING (J2): the S3's GPIO15, the data out on a Type B port
+//  - MIDI IN (J3, RX): the S3's GPIO21, through the 6N138
+// A TRS port's type is which of the TIP and the RING carries the data, not a separate switch line: Type A puts the
+// data on the TIP and holds the RING high as the current source, Type B is the same with the two pins swapped. The
+// firmware holds the RING high and keeps the UART on the TIP, which is Type A; Type B (the UART on the RING with
+// the TIP held high) is not implemented yet.
 // Power and flashing ride the S3's native USB port (there is no USB-UART bridge on the board); the console moves
 // to TinyUSB's serial port once the app starts, as on every S3 board (sdkconfig.defaults.esp32s3).
 static const board_t the_board = {
     .name = "receiver's rev A TRS on a bare ESP32-S3",
-    .midi_tx = GPIO_NUM_14,  // TRS TIP: the data out (Type A)
+    .midi_tx = GPIO_NUM_14,  // TRS TIP: the data out on a Type A port
     .midi_rx = GPIO_NUM_21,  // TRS RX (J3 IN)
     .led = GPIO_NUM_NC,      // no LED on the bare board
     .button = GPIO_NUM_0,    // BOOT, with the board's pull-up
@@ -68,7 +70,7 @@ static const board_t the_board = {
     .batt_adc_channel = -1,  // no battery: always "on USB"
     // The bare board is USB-powered like the dev kit: hold Wi-Fi to 15 dBm, where its 3.3 V does not sag.
     .wifi_max_tx = 60,
-    .trs_ring = GPIO_NUM_15,  // TRS RING: holds the port on Type A (the TIP is the data out)
+    .trs_ring = GPIO_NUM_15,  // TRS RING: held high, so the data out is the TIP (Type A)
 };
 #else
 #error "no board selected (CONFIG_AIRMIDI_BOARD)"
@@ -89,9 +91,9 @@ void board_init(void) {
         gpio_set_level(the_board.led, 0);
     }
     if (the_board.trs_ring != GPIO_NUM_NC) {
-        // The port switches its type on the RING: hold it high, so the TIP is the data out (Type A) and the
-        // board can drive a MIDI OUT on the 3.5mm jack.
-        // TODO: Type B (the other direction) is pending.
+        // Hold the RING high and leave the UART on the TIP: a Type A port, so the board can drive a MIDI OUT on the
+        // 3.5mm jack. A Type B port would hold the TIP high and put the data on the RING instead.
+        // TODO: Type B is pending.
         gpio_config_t sw = {.pin_bit_mask = 1ULL << the_board.trs_ring, .mode = GPIO_MODE_OUTPUT};
         gpio_config(&sw);
         gpio_set_level(the_board.trs_ring, 1);
