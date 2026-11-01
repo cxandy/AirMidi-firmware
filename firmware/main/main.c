@@ -289,6 +289,7 @@ void app_main(void) {
         if (c >= '0' && c <= '2') power_set_mode(c - '0');  // power modes, for measuring ('2' needs RESET after)
         if (c == 'B') usb_midi_bootloader();                // S3: restart into the ROM bootloader (flashing over USB)
         if (c == 'R') usb_midi_restart();                   // S3: a plain restart, for checking the restart path
+        if (c == 'V') usb_midi_flag_download();             // S3: set the download flag and report it, no restart
         if (c == 'E') toggle_espnow();
         vTaskDelay(pdMS_TO_TICKS(50));
     }

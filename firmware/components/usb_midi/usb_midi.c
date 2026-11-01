@@ -190,3 +190,11 @@ void usb_midi_bootloader(void) {
 // Console 'R': the same restart without the ROM download bit, so the box comes back as itself. A bring-up key: it
 // is the quickest way to see whether the restart path works, without going through a flash.
 void usb_midi_restart(void) { esp_restart(); }
+
+// Console 'V': set the ROM download flag and report what the register says, without restarting. A bring-up key: it
+// tells apart a register write that goes wrong from the restart that follows it.
+void usb_midi_flag_download(void) {
+    ESP_LOGI(TAG, "option1 before 0x%08x", (unsigned)REG_READ(RTC_CNTL_OPTION1_REG));
+    REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+    ESP_LOGI(TAG, "option1 after 0x%08x", (unsigned)REG_READ(RTC_CNTL_OPTION1_REG));
+}

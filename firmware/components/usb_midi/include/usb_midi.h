@@ -23,3 +23,7 @@ void usb_midi_bootloader(void);
 // Restart the chip now, staying an ordinary boot (no ROM download bit): the box comes back as itself. A bring-up
 // key, for checking that the restart path works without a flash.
 void usb_midi_restart(void);
+
+// Set the ROM download flag without restarting, and report the register. A bring-up key, to tell a bad register
+// write apart from the restart that follows it.
+void usb_midi_flag_download(void);
