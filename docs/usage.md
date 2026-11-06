@@ -118,18 +118,29 @@ Play 模式下 Wi-Fi 是关闭的，所以打不开网页；要配置就先切�
 
 ### 7.3 设置项
 
-| 设置 | 说明 | 改动后 |
-|---|---|---|
-| 名字 | BLE 广播名、`<名字>.local`、USB MIDI 名称、Setup 热点名；只能使用字母、数字和 `-`，不超过 31 字符 | 重启 |
-| SysEx 超时 | 一个 SysEx 消息最多占用合并输出的时间（毫秒，默认 500）；只有在多个来源同时汇聚到一个输出时才需要调 | 重启 |
-| `ble in network` | Network 模式下是否仍开 BLE | 下个 Network 会话生效；已在该模式则重启 |
-| BLE 设备 | 盒子主动去连的 BLE MIDI 键盘/控制器：填 `*` 表示任意设备，也可以填广播名或 MAC 地址 | 立即生效 |
-| ESP-NOW / 分组 | 两台盒子之间的无线 MIDI 线；两台要用同一个分组（默认 `airmidi`） | 重启 |
+status 页的 mode 选择器、settings 页的六项、wifi 页和 update 页，就是全部可以在网页上改的东西：
+
+| 位置 | 项目 | 取值 / 默认 | 作用 | 生效方式 |
+|---|---|---|---|---|
+| status | mode | `play` / `network` / `setup`，默认 `play` | 盒子工作模式 | 保存；要开关 BLE 时自动重启 |
+| settings | 名称 name | 1–31 个字母、数字或 `-`（不能以 `-` 开头结尾），默认 `airmidi-` + MAC 末两字节 | BLE 广播名、`<名字>.local`、USB MIDI 名称、Setup 热点名 | 重启（网页地址随之改变） |
+| settings | SysEx 超时 | 50–5000 ms，默认 500 | 一个 SysEx 消息最多占用合并输出的时间；多来源汇聚到同一输出时才需要调 | 重启 |
+| settings | ble in network | 开 / 关，默认关 | Network 模式下是否仍开 BLE（开了会拖慢网络 MIDI 约 16 ms） | 下个 Network 会话；已在该模式则重启 |
+| settings | ble device | `*`（任意）、广播名或 MAC 地址，默认空（不主动连） | 盒子主动去连的 BLE MIDI 键盘/控制器；右边按钮扫描 5 秒，点列表里的设备即可选定 | 立即 |
+| settings | esp-now cable | 开 / 关，默认关 | 两台盒子无线直连，见第 10 节 | 重启 |
+| settings | group | 1–15 个字母、数字或 `-`，默认 `airmidi` | ESP-NOW 分组；两台必须相同 | 重启 |
+| wifi | 已保存网络 | 列表，可点 × 删除 | Network 模式依次尝试的网络 | 立即 |
+| wifi | SSID / 密码 | SSID 1–32 字节；密码 0–64 字节，开放网络留空 | 添加要加入的 2.4 GHz 网络 | 立即；Network 模式按最新添加优先尝试 |
+| update | 固件 | 官方签名的 `.bin` | 上传、在线检查新版本、安装 | 安装后重启 |
+
+设置页右下的 BLE 扫描只扫 5 秒；找不到设备就再点一次。受信任手机列表只存在于手机 App（和 `api/phones`
+接口）里，网页上没有。
 
 ### 7.4 第一次连接家里的 Wi-Fi
 
 1. 长按按键 8 秒进入 Setup（LED 双闪），手机连上盒子的开放热点；
-2. 打开 `http://192.168.4.1`，进入 wifi 页，扫描并选择 2.4 GHz 网络，输入密码，添加；
+2. 打开 `http://192.168.4.1`，进入 wifi 页，手动输入家里 Wi-Fi 的 SSID 和密码，添加（网页没有扫描列表；扫描并
+   试连是手机 App 里的功能，走 `/api/wifi/scan` 和 `/api/wifi/try`）；
 3. 回 status 页把模式切到 `network`；
 4. 盒子重启后加入网络，网页地址变成 `http://<名字>.local`。
 
