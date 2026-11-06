@@ -196,7 +196,7 @@ void rtp_midi_start(const char *name) {
     uint32_t ssrc = (uint32_t)mac[2] << 24 | (uint32_t)mac[3] << 16 | (uint32_t)mac[4] << 8 | mac[5];
     rtpmidi_init(host, name, ssrc, esp_random(), &cb, NULL);
     xTaskCreate(udp_task, "rtpmidi", 4096, NULL, 11, NULL);
-    mdns_service_add(name, "_apple-midi", "_udp", RTP_MIDI_PORT, NULL, 0);
+    net_add_service("_apple-midi", "_udp", RTP_MIDI_PORT);  // re-announced by net on every join
     ESP_LOGI(TAG, "RTP-MIDI on UDP %d/%d", RTP_MIDI_PORT, RTP_MIDI_PORT + 1);
 }
 

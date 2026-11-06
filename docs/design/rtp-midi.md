@@ -16,6 +16,15 @@ announces itself as `_apple-midi._udp` on UDP 5004 (control) and 5005 (data), ta
   RTP-MIDI carries MIDI 1.0, so its ports are byte outputs to the bus: it merges their sources SysEx-aware, and MIDI
   2.0 from elsewhere is translated down on the way out.
 
+## The mDNS announcement
+
+The service is registered through `net` (`net_add_service`), not with `mdns_service_add` directly: `net` keeps the
+service (with its TXT items) and adds it again on every join, over the access point too. A service added while the
+station is still associating goes into an interface that has no address yet, and mDNS announces a record only when
+it changes, so nothing was ever visible: rtpMIDI's directory stayed empty (it listens for announcements and never
+queries) and `<name>.local` resolved only if something asked twice. Network MIDI 2.0 and the web UI's `_http._tcp`
+go through the same table.
+
 ## Lost packets: the recovery journal
 
 RTP-MIDI does not retransmit. Every packet carries a journal: a summary of the stream since a checkpoint packet the

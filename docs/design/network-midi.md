@@ -2,8 +2,9 @@
 
 The box is a Network MIDI 2.0 (UDP, M2-124) **host**: it announces itself over mDNS as `_midi2._udp` with its UMP
 Endpoint Name and Product Instance Id, listens on UDP 5673, and accepts up to two clients (`PORT_NET_0/1` on the
-bus). macOS 26 is a client: Audio MIDI Setup's MIDI Network window lists the box and connects; the session then
-appears as a CoreMIDI port (spike S1).
+bus). The announcement is registered through `net`, which repeats it on every join (see
+[rtp-midi.md](rtp-midi.md#the-mdns-announcement)). macOS 26 is a client: Audio MIDI Setup's MIDI Network window lists
+the box and connects; the session then appears as a CoreMIDI port (spike S1).
 
 ## Layers
 
