@@ -78,9 +78,11 @@ the lower latency wins. Measured numbers are in [measurements.md](../measurement
 ## Button and LED (`ui_io`, `lib/src/ui.c`)
 
 A 10 ms esp_timer samples the button and drives the LED. The gestures (debounced; short, double, long on release
-at 2-8 s, very long fires at 8 s while still held) and the blink patterns are pure functions of (input, time) in
-`lib/`, tested on the host including the millisecond clock wrapping. Double press = all notes off on every output
-(sustain off, all sound off, all notes off on 16 channels).
+at 2-8 s, very long fires at 8 s while still held, double-long arms at 2 s and fires on the release) and the blink
+patterns are pure functions of (input, time) in `lib/`, tested on the host including the millisecond clock wrapping.
+Double press = all notes off on every output (sustain off, all sound off, all notes off on 16 channels); a second
+press held past 2 s turns the ESP-NOW cable on or off, which saves and restarts. It fires on the release: a restart
+while the button is down would strap the boards whose button is BOOT (GPIO0) into the ROM download mode.
 
 ## Battery (`power`, `lib/src/ui.c`)
 

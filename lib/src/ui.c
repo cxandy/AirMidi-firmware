@@ -15,9 +15,17 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now) {
         if (b->stable) {  // press
             b->pressed_at = now;
             b->very_long_fired = false;
+            b->armed = false;
+            // A press inside the double-press window may be the second half of a double, or of a double-hold.
+            b->second_press = b->short_pending;
         } else {  // release
             uint32_t held = now - b->pressed_at;
-            if (b->very_long_fired) {
+            b->second_press = false;
+            if (b->armed) {  // held past 2 s: toggle the ESP-NOW cable, now that the button is up
+                b->armed = false;
+                b->short_pending = false;
+                ev = BUTTON_DOUBLE_LONG;
+            } else if (b->very_long_fired) {
                 // already reported at 8 s
             } else if (held >= BUTTON_LONG_MS) {
                 ev = BUTTON_LONG;
@@ -32,7 +40,10 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now) {
     }
     if (ev) return ev;
 
-    if (b->stable && !b->very_long_fired && now - b->pressed_at >= BUTTON_VERY_LONG_MS) {
+    // A second press still held at 2 s arms the ESP-NOW toggle: the LED goes solid and the release fires it.
+    if (b->stable && b->second_press && !b->armed && now - b->pressed_at >= BUTTON_LONG_MS) b->armed = true;
+
+    if (b->stable && !b->very_long_fired && !b->second_press && now - b->pressed_at >= BUTTON_VERY_LONG_MS) {
         b->very_long_fired = true;
         b->short_pending = false;
         return BUTTON_VERY_LONG;
@@ -42,15 +53,12 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now) {
         b->short_pending = false;
         return BUTTON_SHORT;
     }
-    // A long press after a short one: the short one stands on its own.
-    if (b->short_pending && b->stable && now - b->pressed_at >= BUTTON_LONG_MS) {
-        b->short_pending = false;
-        return BUTTON_SHORT;
-    }
     return BUTTON_NONE;
 }
 
 uint32_t button_held_ms(const button_t *b, uint32_t now) { return b->stable ? now - b->pressed_at : 0; }
+
+bool button_armed(const button_t *b) { return b->stable && b->armed; }
 
 // ---- LED -----------------------------------------------------------------------------------------------------
 

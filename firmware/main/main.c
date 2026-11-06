@@ -118,8 +118,8 @@ static ble_config_reply_t ble_api(const char *method, const char *path, const ch
     return (ble_config_reply_t){.status = r.status, .json = r.json, .then = r.then, .then_arg = r.then_arg};
 }
 
-// Console 'E': the ESP-NOW cable on or off (for boxes without the web UI at hand). Restarts: the radio's state at
-// boot depends on it.
+// Console 'E' or a double press with the second held 2 s: the ESP-NOW cable on or off (for boxes without the web UI
+// at hand). Restarts: the radio's state at boot depends on it.
 static void toggle_espnow(void) {
     settings_t s;
     nvs_settings_get(&s);
@@ -149,6 +149,9 @@ static void handle_button(button_event_t ev) {
             break;
         case BUTTON_LONG:  // Play <-> Network; from Setup back to Play
             set_mode(current_mode() == AIRMIDI_MODE_PLAY ? AIRMIDI_MODE_NETWORK : AIRMIDI_MODE_PLAY);
+            break;
+        case BUTTON_DOUBLE_LONG:  // second press held 2 s: the ESP-NOW cable, blind
+            toggle_espnow();
             break;
         case BUTTON_VERY_LONG:
             set_mode(AIRMIDI_MODE_SETUP);

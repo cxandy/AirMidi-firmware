@@ -77,12 +77,55 @@ static void test_very_long_fires_while_held_and_only_once(void) {
 static void test_short_then_long(void) {
     reset();
     hold(true, 100);
-    hold(false, 100);
-    hold(true, 2500);  // second press turns into a long one: the first stands alone
+    hold(false, 400);  // outside the double-press window: the first press stands on its own
+    hold(true, 2500);
     hold(false, 500);
     TEST_ASSERT_EQUAL(2, n_events);
     TEST_ASSERT_EQUAL(BUTTON_SHORT, events[0]);
     TEST_ASSERT_EQUAL(BUTTON_LONG, events[1]);
+}
+
+// The ESP-NOW toggle: a double press with the second one held past 2 s, fired on the release.
+static void test_double_hold_arms_at_two_seconds_and_fires_on_release(void) {
+    reset();
+    hold(true, 100);
+    hold(false, 100);
+    hold(true, 1500);
+    TEST_ASSERT_FALSE(button_armed(&b));  // a second press, but not yet 2 s
+    TEST_ASSERT_EQUAL(0, n_events);
+    hold(true, 800);
+    TEST_ASSERT_TRUE(button_armed(&b));  // 2 s: armed, and nothing fired yet
+    TEST_ASSERT_EQUAL(0, n_events);
+    hold(false, 500);
+    TEST_ASSERT_FALSE(button_armed(&b));
+    TEST_ASSERT_EQUAL(1, n_events);
+    TEST_ASSERT_EQUAL(BUTTON_DOUBLE_LONG, events[0]);
+    hold(true, 100);  // the next press is a plain short one again
+    hold(false, 500);
+    TEST_ASSERT_EQUAL(2, n_events);
+    TEST_ASSERT_EQUAL(BUTTON_SHORT, events[1]);
+}
+
+static void test_double_hold_released_early_is_all_notes_off(void) {
+    reset();
+    hold(true, 100);
+    hold(false, 100);
+    hold(true, 1000);  // let go before 2 s: still the ordinary double press
+    hold(false, 500);
+    TEST_ASSERT_EQUAL(1, n_events);
+    TEST_ASSERT_EQUAL(BUTTON_DOUBLE, events[0]);
+}
+
+static void test_double_hold_never_enters_setup(void) {
+    reset();
+    hold(true, 100);
+    hold(false, 100);
+    hold(true, 9000);  // past 8 s while armed: Setup must not fire
+    TEST_ASSERT_TRUE(button_armed(&b));
+    TEST_ASSERT_EQUAL(0, n_events);
+    hold(false, 100);
+    TEST_ASSERT_EQUAL(1, n_events);
+    TEST_ASSERT_EQUAL(BUTTON_DOUBLE_LONG, events[0]);
 }
 
 static void test_time_wraps(void) {
@@ -178,6 +221,9 @@ int main(void) {
     RUN_TEST(test_long_press_fires_on_release);
     RUN_TEST(test_very_long_fires_while_held_and_only_once);
     RUN_TEST(test_short_then_long);
+    RUN_TEST(test_double_hold_arms_at_two_seconds_and_fires_on_release);
+    RUN_TEST(test_double_hold_released_early_is_all_notes_off);
+    RUN_TEST(test_double_hold_never_enters_setup);
     RUN_TEST(test_time_wraps);
     RUN_TEST(test_led_patterns_duty);
     RUN_TEST(test_activity_flicker);

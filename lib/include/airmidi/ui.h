@@ -17,6 +17,8 @@ typedef enum {
     BUTTON_DOUBLE,     // two short presses within the window: all notes off on every output (panic)
     BUTTON_LONG,       // released after 2-8 s: next mode
     BUTTON_VERY_LONG,  // still held at 8 s (fires then, not on release): Setup mode
+    // A double press with its second press held 2 s, released: the ESP-NOW cable on or off (fires on the release).
+    BUTTON_DOUBLE_LONG,
 } button_event_t;
 
 #define BUTTON_DEBOUNCE_MS 20
@@ -31,6 +33,10 @@ typedef struct {
     uint32_t released_at;  // when the last short press ended
     bool short_pending;    // a short press waiting to see if a second one follows
     bool very_long_fired;
+    // This press began inside the double-press window, so it is (the second press of) a double press.
+    bool second_press;
+    // ... and has been held 2 s: the LED is solid and the release fires BUTTON_DOUBLE_LONG.
+    bool armed;
 } button_t;
 
 void button_init(button_t *b);
@@ -40,6 +46,9 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now_ms);
 
 // How long the button has been held (0 if not pressed), so the LED can show a long press being armed.
 uint32_t button_held_ms(const button_t *b, uint32_t now_ms);
+
+// A double press with its second press still held at 2 s: the ESP-NOW toggle is armed and fires on the release.
+bool button_armed(const button_t *b);
 
 // ---- LED -----------------------------------------------------------------------------------------------------
 

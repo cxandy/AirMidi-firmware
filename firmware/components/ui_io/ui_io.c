@@ -16,7 +16,9 @@ static void tick(void *arg) {
     uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
     button_event_t ev = button_update(&button, gpio_get_level(b->button) == 0, now);
     if (ev && handler) handler(ev);
-    if (b->led != GPIO_NUM_NC) gpio_set_level(b->led, led_level(led, now, bus_last_activity_ms()));
+    // A second press held at 2 s is the armed ESP-NOW toggle: solid until the release that fires it.
+    if (b->led != GPIO_NUM_NC)
+        gpio_set_level(b->led, button_armed(&button) || led_level(led, now, bus_last_activity_ms()));
 }
 
 void ui_start(void (*on_button)(button_event_t ev)) {
