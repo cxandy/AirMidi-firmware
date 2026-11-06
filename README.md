@@ -6,7 +6,7 @@
 A battery-powered wireless MIDI interface: it gives any TRS MIDI device (or DIN, with an adapter) Bluetooth and Wi-Fi,
 is set up from a browser or a phone, and updates itself over the air. This repo is its firmware, for an ESP32-C6 or
 ESP32-S3 on a custom PCB in a 3D-printed box, and the apps that play it: one for Android phones and one for the Mac,
-which sequences hardware synths through the box.
+which sequences hardware synths through the box. A Chinese user manual is in [docs/usage.md](docs/usage.md).
 
 ![The box: TRS MIDI in and out on the front, power switch on the side, status LED and button on top](docs/images/enclosure.jpg)
 
