@@ -80,6 +80,7 @@ function editable(el, name, get, commit, secret = false) {
       render();
     };
     input.onkeydown = (e) => {
+      if (e.isComposing || e.keyCode === 229) return;  // the input method's enter picks a candidate, it does not commit
       if (e.key === "Enter") done(true);
       if (e.key === "Escape") done(false);
     };
