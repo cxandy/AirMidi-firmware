@@ -221,8 +221,8 @@ void net_midi_start(const char *name) {
     nm2_callbacks_t cb = {.send = cb_send, .deliver = cb_deliver, .session_changed = cb_session};
     nm2_host_init(host, name_buf, piid, &cb, NULL);
     xTaskCreate(udp_task, "netmidi", 6144, NULL, 11, NULL);
-    net_txt_item_t txt[] = {{"UMPEndpointName", name_buf}, {"ProductInstanceId", piid}};
-    net_add_service_txt("_midi2", "_udp", NET_MIDI_PORT, txt, 2);  // re-announced by net on every join
+    mdns_txt_item_t txt[] = {{"UMPEndpointName", name_buf}, {"ProductInstanceId", piid}};
+    mdns_service_add(name_buf, "_midi2", "_udp", NET_MIDI_PORT, txt, 2);
     ESP_LOGI(TAG, "Network MIDI 2.0 host on UDP %d", NET_MIDI_PORT);
 }
 
