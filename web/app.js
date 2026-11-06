@@ -530,9 +530,11 @@ $("#t-blenet").onclick = () => saveSetting("ble_in_network", !settings.ble_in_ne
 $("#t-espnow").onclick = () => saveSetting("espnow", !settings.espnow);
 editable($("#w-group"), "group", () => settings.espnow_group, (v) => saveSetting("espnow_group", v.trim()));
 
+// The box merges the fields the body has onto the settings it stores, so a save carries only the one that
+// changed: two saves in flight cannot put each other's fields back.
 async function saveSetting(key, value) {
   try {
-    const r = await post("/api/settings", { ...settings, [key]: value });
+    const r = await post("/api/settings", { [key]: value });
     settings = r.settings;
     $("#settings-msg").textContent = r.restart ? "saved: restarting to apply it" : "saved";
   } catch (e) {

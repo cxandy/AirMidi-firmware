@@ -305,7 +305,7 @@ static api_reply_t get_settings(const req_t *q) {
     return ok(settings_json(&s));
 }
 
-// Takes the full settings object; changing the name restarts the box (BLE name, mDNS host, access point).
+// Applies the fields the body has; changing the name restarts the box (BLE name, mDNS host, access point).
 static api_reply_t post_settings(const req_t *q) {
     cJSON *in = json_body(q);
     if (!in) return error(400, "expected a JSON object");
