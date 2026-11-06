@@ -36,7 +36,8 @@ No USB-UART bridge: power and flashing ride the S3's native USB port (USB Serial
 TinyUSB's serial port once the app starts (`CONFIG_ESP_CONSOLE_NONE`, as for the other S3 boards). The TRS port hangs
 straight off two pins, each through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15. A TRS port's type is
 which of the two carries the data, so the firmware holds the RING high and runs the UART on the TIP: Type A. (Type B,
-the same with the two pins swapped, is pending.) The input is a 6N137 optocoupler on GPIO21.
+the same with the two pins swapped, is pending.) The input is a 6N137 optocoupler on GPIO21. A plain, active-high LED
+is on GPIO48 and BOOT (GPIO0) is the button.
 
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
 whenever Wi-Fi starts. The dev kit and the bare S3 are held to 15 dBm. At 20 dBm none of the dev kit's Wi-Fi
