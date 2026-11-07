@@ -144,6 +144,7 @@ function renderStatus() {
   $("#facts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
   renderPortal();
   renderWifiAddress();
+  renderWifiSwitch();
 }
 
 function fmtUptime(ms) {
@@ -621,6 +622,7 @@ function renderNetworks() {
     await api("/api/wifi?ssid=" + encodeURIComponent(g.dataset.ssid), { method: "DELETE" });
     loadNetworks();
   }));
+  renderWifiSwitch();
 }
 
 function renderWifiInputs() {
@@ -634,29 +636,37 @@ $("#add-net").onclick = async () => {
   try {
     await post("/api/wifi", { ssid: newSsid, pass: newPass });
     newSsid = newPass = "";
-    // Storing is all this does; the network is used once the box is in network mode, so say that and offer it.
-    $("#wifi-msg").innerHTML = status.mode === "network"
-      ? "stored; it is tried the next time the box joins"
-      : `stored — <a id="to-network">switch to network mode</a> to use it`;
-    if (status.mode !== "network") $("#to-network").onclick = switchToNetwork;
+    $("#wifi-msg").textContent = "stored; the box joins it in network mode";
   } catch (e) {
     $("#wifi-msg").textContent = e.message;
   }
   loadNetworks();
 };
 
-// Switching mode restarts the box (it turns BLE off), which closes the setup access point under this page.
-async function switchToNetwork() {
-  const url = boxUrl();
-  if (!confirm(`the box restarts into network mode: the setup wi-fi closes and this page stops answering.\n` +
-               `rejoin your own wi-fi and open ${url}. if it cannot join, hold the button 8 s to come back here.`))
+// A stored network is only used in network mode, so the switch sits under the list whenever one is stored. It asks in
+// the page: the captive-portal browser a phone opens this from can swallow a native confirm(), leaving a dead tap.
+function renderWifiSwitch() {
+  const on = !!status && networks.length > 0 && status.mode !== "network";
+  $("#to-network").hidden = !on;
+  if (!on) {
+    $("#to-network-ask").hidden = true;
     return;
+  }
+  $("#to-network-url").textContent = `${status.name}.local`;
+  $("#to-network-url").href = boxUrl();
+}
+
+$("#to-network").onclick = () => ($("#to-network-ask").hidden = false);
+$("#to-network-cancel").onclick = () => ($("#to-network-ask").hidden = true);
+
+// Switching mode restarts the box (it turns BLE off), which closes the setup access point under this page.
+$("#to-network-go").onclick = async () => {
   try {
     await post("/api/mode", { mode: "network" });
   } catch (e) {
     // the restart cuts the connection before the box can answer
   }
-}
+};
 
 // What is around the box: POST starts the scan, GET reports it done and carries the list (strongest first).
 async function scanWifi() {
