@@ -116,7 +116,7 @@ Play 模式下 Wi-Fi 是关闭的，所以打不开网页；要配置就先切�
 
 | 页面 | 内容 |
 |---|---|
-| status | 各端口流量表、电量、信号、模式选择、运行信息；Setup 模式下顶部还有一块门户卡片（地址、复制按钮、二维码，方便第二台手机扫码加入） |
+| status | 各端口流量表、电量、信号、模式选择、运行信息；Setup 模式下顶部还有一块门户卡片（盒子自己的 Wi-Fi 名、地址和复制按钮，方便第二台手机加入后直接打开） |
 | play | 网页控制面板：推子、打击垫，以及按 MIDI-CI 读到的合成器控件；手机也可以当演奏界面用（WebSocket 传输，实测约 3.9 ms 到 TRS） |
 | settings | 盒子名、SysEx 超时、`ble in network`、要连接的 BLE 设备（可扫描选择）、ESP-NOW 开关与分组 |
 | wifi | 已保存的网络（可删除）、手动添加 SSID 和密码 |
@@ -283,7 +283,7 @@ Play 模式 Wi-Fi 关闭。切到 Network 或 Setup。
 
 - [README](../README.md)：项目总览、构建、测试
 - [docs/design/board-and-settings.md](design/board-and-settings.md)：板级引脚表与设置存储
-- [docs/design/webui.md](design/webui.md)：网页、Setup 门户与二维码
+- [docs/design/webui.md](design/webui.md)：网页与 Setup 门户
 - [docs/design/ota.md](design/ota.md)：分区、签名、自检与回滚
 - [docs/design/transports.md](design/transports.md)：TRS/BLE/按键与 LED 的实现
 - [docs/testing.md](design/testing.md)：硬件在环测试与工具

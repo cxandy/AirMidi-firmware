@@ -29,11 +29,9 @@ and no "this network has no internet" dead end to fall through.
 ## The status page points at itself during setup
 
 In `NET_AP` the status page shows a portal card (`#portal` in `web/index.html`): the box's own network name, the
-address `http://192.168.4.1/` as a link, a copy button (with an `execCommand` fallback, since `http://` is not a
-secure context and the Clipboard API may be absent), and that address as a **QR code drawn on a canvas** from a
-constant table in `web/app.js` — version 2, error correction M. It is a picture of a constant (the address never
-changes), so it is drawn, not encoded, on the device. This is for a second phone: the first one is already on the
-network; the second scans the code to join.
+address `http://192.168.4.1/` as a link, and a copy button (with an `execCommand` fallback, since `http://` is not a
+secure context and the Clipboard API may be absent). The phone the portal opened the page for already knows the
+address; the card is for a second phone, which joins the open network and opens the same address.
 
 ## Phones: the web console is the path, not network MIDI
 

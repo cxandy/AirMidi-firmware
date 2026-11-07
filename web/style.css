@@ -124,15 +124,14 @@ main { padding: calc(60 * var(--u)) calc(120 * var(--u)) calc(60 * var(--u)); ma
              stroke-width: 3; stroke-linecap: butt; stroke-linejoin: miter; overflow: visible; }
 .note { opacity: .7; min-height: calc(40 * var(--u)); }
 
-/* setup mode: the portal, above the meters — the one address to open, and a code a second phone can scan */
-.portal { display: flex; flex-wrap: wrap; align-items: flex-start; gap: calc(80 * var(--u));
-          background: var(--surface); padding: calc(60 * var(--u)); margin-bottom: calc(80 * var(--u)); }
-.portal-text { display: flex; flex-direction: column; gap: calc(20 * var(--u)); max-width: calc(820 * var(--u)); }
+/* setup mode: the portal, above the meters — the one address to open, and a copy button for a second phone */
+.portal { background: var(--surface); padding: calc(60 * var(--u)); margin-bottom: calc(80 * var(--u));
+          max-width: calc(940 * var(--u)); }
+.portal-text { display: flex; flex-direction: column; gap: calc(20 * var(--u)); }
 .portal .label { color: var(--ac); }  /* accent job: the box's own network is the thing to notice here */
 .portal .note { min-height: 0; }
 .portal-url { display: flex; align-items: center; gap: calc(30 * var(--u)); margin: calc(20 * var(--u)) 0; }
 .portal-url .value { color: var(--heather-d); }
-.portal .qr { width: calc(260 * var(--u)); height: calc(260 * var(--u)); background: #e9ecee; image-rendering: pixelated; }
 
 [data-hue=fir] { --hue: var(--fir); --hue-h: var(--fir-h); --hue-d: var(--fir-d); }
 [data-hue=slate] { --hue: var(--slate); --hue-h: var(--slate-h); --hue-d: var(--slate-d); }

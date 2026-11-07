@@ -158,53 +158,7 @@ document.querySelectorAll("#mode a").forEach((a) => (a.onclick = async () => {
 
 // ---- setup mode: the portal --------------------------------------------------------------------------------------
 
-// http://192.168.4.1 as a QR code: version 2, error correction M, quiet zone added while drawing. It is a picture
-// of a constant, so it is drawn from this table rather than by an encoder; regenerate it if the address changes.
-const PORTAL_QR = `
-#######.##.###.#..#######
-#.....#..#.#.##...#.....#
-#.###.#...#.#.#...#.###.#
-#.###.#.#.##....#.#.###.#
-#.###.#.###.#.##..#.###.#
-#.....#.#.........#.....#
-#######.#.#.#.#.#.#######
-........#..###.#.........
-#...#.###...##..######..#
-##...#...#..####.#.###.#.
-.##.####.####..###.#.##..
-#####....#.#..#..##.#.##.
-..#..##.###..###..#..####
-##.###...##.#..#...##..#.
-....####.#.######.##.##..
-...#.#.#..##.#.####..###.
-####.##.#...##.########..
-........##...####...#.#..
-#######.#.......#.#.##...
-#.....#..##.#.###...#####
-#.###.#.#..#.##.#####.#.#
-#.###.#..#..#...#.#..####
-#.###.#..#.####.#.#....#.
-#.....#....#.#...#.#####.
-#######.#.#.##...##...###
-`;
-
 const PORTAL_URL = "http://192.168.4.1";
-
-let qrDrawn = false;
-
-function drawQr() {
-  if (qrDrawn) return;
-  const rows = PORTAL_QR.trim().split("\n"), n = rows.length, quiet = 3;
-  const c = $("#portal-qr"), ctx = c.getContext("2d");
-  const cell = Math.floor(c.width / (n + 2 * quiet)), off = Math.floor((c.width - cell * n) / 2);
-  ctx.fillStyle = "#e9ecee";
-  ctx.fillRect(0, 0, c.width, c.height);
-  ctx.fillStyle = "#090c0f";
-  rows.forEach((row, y) => {
-    for (let x = 0; x < n; x++) if (row[x] === "#") ctx.fillRect(off + x * cell, off + y * cell, cell, cell);
-  });
-  qrDrawn = true;
-}
 
 // Only the access point is a portal: there the page has to say where it is, because the phone was never told.
 function renderPortal() {
@@ -212,7 +166,6 @@ function renderPortal() {
   $("#portal").hidden = !on;
   if (!on) return;
   $("#portal-ssid").textContent = status.name;
-  drawQr();
 }
 
 $("#portal-copy").onclick = async () => {

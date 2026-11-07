@@ -55,8 +55,8 @@ board's revision history: the photo shows rev A, and rev B fixes what its bring-
   access point). A long press switches mode, an 8 s press opens Setup, a double press sends all notes off.
 - **Web UI** at `http://<name>.local`: live traffic per port, battery, signal, settings, Wi-Fi networks, firmware
   updates. Plain JS, no framework, 18 KB, built into the firmware. In Setup mode the status page shows the box's own
-  address and a QR code, and a phone that joins the setup network is sent to the page automatically (a captive portal:
-  every name resolves to `192.168.4.1`, unknown paths 302 there).
+  address, and a phone that joins the setup network is sent to the page automatically (a captive portal: every name
+  resolves to `192.168.4.1`, unknown paths 302 there).
 - **Phones use the web console, not network MIDI.** The status and play pages work from any phone browser over
   Wi-Fi; the play page is a MIDI control surface over the WebSocket (~3.9 ms page → TRS). Network MIDI 2.0 and
   RTP-MIDI need a Mac (native) or Windows rtpMIDI — iOS has no system network-MIDI panel and the box only answers
