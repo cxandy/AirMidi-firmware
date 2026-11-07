@@ -143,6 +143,7 @@ function renderStatus() {
   ];
   $("#facts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
   renderPortal();
+  renderWifiAddress();
 }
 
 function fmtUptime(ms) {
@@ -160,28 +161,39 @@ document.querySelectorAll("#mode a").forEach((a) => (a.onclick = async () => {
 
 const PORTAL_URL = "http://192.168.4.1";
 
+// http:// is not a secure context, so the Clipboard API may be missing: the old way still works.
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    const t = document.createElement("textarea");
+    t.value = text;
+    document.body.appendChild(t);
+    t.select();
+    const ok = (() => { try { return document.execCommand("copy"); } catch (_) { return false; } })();
+    t.remove();
+    return ok;
+  }
+}
+
+// The name follows the box (mDNS announces it whatever the router hands out); the address does not.
+function boxUrl() {
+  return `http://${status.name}.local`;
+}
+
 // Only the access point is a portal: there the page has to say where it is, because the phone was never told.
 function renderPortal() {
   const on = status.wifi.state === "access point";
   $("#portal").hidden = !on;
   if (!on) return;
   $("#portal-ssid").textContent = status.name;
+  $("#portal-local").textContent = `${status.name}.local`;
+  $("#portal-local").href = boxUrl();
 }
 
 $("#portal-copy").onclick = async () => {
-  try {
-    await navigator.clipboard.writeText(PORTAL_URL);
-    $("#portal-msg").textContent = "address copied";
-  } catch (e) {
-    // http:// is not a secure context, so the clipboard API may be missing: the old way still works.
-    const t = document.createElement("textarea");
-    t.value = PORTAL_URL;
-    document.body.appendChild(t);
-    t.select();
-    const ok = (() => { try { return document.execCommand("copy"); } catch (_) { return false; } })();
-    t.remove();
-    $("#portal-msg").textContent = ok ? "address copied" : `copy it by hand: ${PORTAL_URL}`;
-  }
+  $("#portal-msg").textContent = (await copyText(PORTAL_URL)) ? "address copied" : `copy it by hand: ${PORTAL_URL}`;
 };
 
 // ---- play page: a generic control surface over the WebSocket, under the device's own controls ------------------
@@ -586,6 +598,18 @@ async function loadNetworks() {
   renderNetworks();
 }
 
+// In network mode the box's address is whatever the router handed out: say it, and keep the name to hand.
+function renderWifiAddress() {
+  const s = status;
+  const on = s.wifi.state === "connected" && s.wifi.ip;
+  $("#wifi-addr").hidden = !on;
+  if (!on) return;
+  const a = $("#wifi-addr-local");
+  a.textContent = `${s.name}.local`;
+  a.href = boxUrl();
+  $("#wifi-addr-ip").textContent = s.wifi.ip;
+}
+
 function renderNetworks() {
   const joined = status?.wifi.ssid;
   const r = { networks };
@@ -650,6 +674,11 @@ function renderFound(r) {
 }
 
 $("#wifi-scan").onclick = scanWifi;
+
+$("#wifi-copy").onclick = async () => {
+  const url = boxUrl();
+  $("#wifi-msg").textContent = (await copyText(url)) ? "address copied" : `copy it by hand: ${url}`;
+};
 
 function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);

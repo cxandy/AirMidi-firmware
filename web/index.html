@@ -30,6 +30,7 @@
           <a class="value" href="http://192.168.4.1/">192.168.4.1</a>
           <a id="portal-copy" class="glyph" title="copy the address"><svg viewBox="0 0 24 24"><path d="M9 9h11v11H9zM15 9V4H4v11h5"/></svg></a>
         </div>
+        <p class="small note">on your own network the box answers to <a id="portal-local"></a> as well.</p>
         <p id="portal-msg" class="small note">join <span id="portal-ssid"></span>, then add your network on the wifi page.</p>
       </div>
     </div>
@@ -87,6 +88,11 @@
 
   <section id="wifi" class="page">
     <ul id="networks" class="list"></ul>
+    <div id="wifi-addr" class="portal-url" hidden>
+      <a id="wifi-addr-local" class="small"></a>
+      <span id="wifi-addr-ip" class="small"></span>
+      <a id="wifi-copy" class="glyph" title="copy the address"><svg viewBox="0 0 24 24"><path d="M9 9h11v11H9zM15 9V4H4v11h5"/></svg></a>
+    </div>
     <div class="row">
       <div id="w-ssid" class="wide text" data-hue="heather"></div>
       <div id="w-pass" class="wide text secret" data-hue="heather"></div>

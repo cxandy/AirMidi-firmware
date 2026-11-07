@@ -30,8 +30,10 @@ and no "this network has no internet" dead end to fall through.
 
 In `NET_AP` the status page shows a portal card (`#portal` in `web/index.html`): the box's own network name, the
 address `http://192.168.4.1/` as a link, and a copy button (with an `execCommand` fallback, since `http://` is not a
-secure context and the Clipboard API may be absent). The phone the portal opened the page for already knows the
-address; the card is for a second phone, which joins the open network and opens the same address.
+secure context and the Clipboard API may be absent). Under it, the box's own name (`http://<name>.local`) is the
+address to keep: the access point's address stops working the moment the box joins a network, while mDNS follows it
+to whatever address the router hands out. The phone the portal opened the page for already knows the address; the
+card is for a second phone, which joins the open network and opens the same address.
 
 ## Phones: the web console is the path, not network MIDI
 
