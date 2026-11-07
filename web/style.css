@@ -133,6 +133,10 @@ main { padding: calc(60 * var(--u)) calc(120 * var(--u)) calc(60 * var(--u)); ma
 .portal-url { display: flex; align-items: center; gap: calc(30 * var(--u)); margin: calc(20 * var(--u)) 0; }
 .portal-url .value { color: var(--heather-d); }
 
+/* the wifi page: one scan action above the list of what it finds */
+#wifi-scan { width: auto; gap: calc(30 * var(--u)); margin-bottom: calc(40 * var(--u)); }
+#found:empty { display: none; }
+
 [data-hue=fir] { --hue: var(--fir); --hue-h: var(--fir-h); --hue-d: var(--fir-d); }
 [data-hue=slate] { --hue: var(--slate); --hue-h: var(--slate-h); --hue-d: var(--slate-d); }
 [data-hue=heather] { --hue: var(--heather); --hue-h: var(--heather-h); --hue-d: var(--heather-d); }

@@ -119,7 +119,7 @@ Play 模式下 Wi-Fi 是关闭的，所以打不开网页；要配置就先切�
 | status | 各端口流量表、电量、信号、模式选择、运行信息；Setup 模式下顶部还有一块门户卡片（盒子自己的 Wi-Fi 名、地址和复制按钮，方便第二台手机加入后直接打开） |
 | play | 网页控制面板：推子、打击垫，以及按 MIDI-CI 读到的合成器控件；手机也可以当演奏界面用（WebSocket 传输，实测约 3.9 ms 到 TRS） |
 | settings | 盒子名、SysEx 超时、`ble in network`、要连接的 BLE 设备（可扫描选择）、ESP-NOW 开关与分组 |
-| wifi | 已保存的网络（可删除）、手动添加 SSID 和密码 |
+| wifi | 已保存的网络（可删除）、扫描附近网络并填入名称、手动添加 SSID 和密码 |
 | update | 当前固件信息、上传固件、检查 GitHub 上的新版本并安装 |
 
 ### 7.3 设置项
@@ -136,6 +136,7 @@ status 页的 mode 选择器、settings 页的六项、wifi 页和 update 页，
 | settings | esp-now cable | 开 / 关，默认关 | 两台盒子无线直连，见第 10 节 | 重启 |
 | settings | group | 1–15 个字母、数字或 `-`，默认 `airmidi` | ESP-NOW 分组；两台必须相同 | 重启 |
 | wifi | 已保存网络 | 列表，可点 × 删除 | Network 模式依次尝试的网络 | 立即 |
+| wifi | 扫描 | ↻ 按钮，列出附近的 2.4 GHz 网络（信号强的在前），点一行填入 SSID | 找网络，不改任何设置 | 立即 |
 | wifi | SSID / 密码 | SSID 1–32 字节；密码 0–64 字节，开放网络留空 | 添加要加入的 2.4 GHz 网络 | 立即；Network 模式按最新添加优先尝试 |
 | update | 固件 | 官方签名的 `.bin` | 上传、在线检查新版本、安装 | 安装后重启 |
 
@@ -145,8 +146,9 @@ status 页的 mode 选择器、settings 页的六项、wifi 页和 update 页，
 ### 7.4 第一次连接家里的 Wi-Fi
 
 1. 长按按键 8 秒进入 Setup（LED 双闪），手机连上盒子的开放热点；
-2. 打开 `http://192.168.4.1`，进入 wifi 页，手动输入家里 Wi-Fi 的 SSID 和密码，添加（网页没有扫描列表；扫描并
-   试连是手机 App 里的功能，走 `/api/wifi/scan` 和 `/api/wifi/try`）；
+2. 打开 `http://192.168.4.1`，进入 wifi 页：点 ↻ 扫描（几秒），从列表里点一行填好 SSID，输入密码后点 `+` 添加；
+   也可以直接手动输入 SSID 和密码。网页只负责保存，切到 Network 模式才去连；手机 App 里的试连
+   （`/api/wifi/try`）可以先验证密码再保存；
 3. 回 status 页把模式切到 `network`；
 4. 盒子重启后加入网络，网页地址变成 `http://<名字>.local`。
 

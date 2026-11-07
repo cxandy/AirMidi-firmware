@@ -53,3 +53,5 @@ rtpMIDI.** This one line answers most "why can't my iPhone connect over Wi-Fi" t
 - The portal end to end has no test: it needs a real radio and a real phone, so it is a bench check by hand — join
   the setup access point and the page should open on its own. `tools/hil/web_test.py` covers the page and the API
   in Network mode, not the portal.
+- The wifi page's scan is the phone app's pair of endpoints (`POST /api/wifi/scan`, then a poll of `GET`), which is
+  what the box also answers to the app. No host test; `web_test.py` runs in Network mode, where it gets the 409.

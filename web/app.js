@@ -617,6 +617,40 @@ $("#add-net").onclick = async () => {
   loadNetworks();
 };
 
+// What is around the box: POST starts the scan, GET reports it done and carries the list (strongest first).
+async function scanWifi() {
+  const found = $("#found");
+  found.innerHTML = "<li>looking…</li>";
+  try {
+    await post("/api/wifi/scan", {});
+    for (let i = 0; i < 40; i++) {
+      const r = await api("/api/wifi/scan");
+      if (r.state !== "scanning") return renderFound(r);
+      await new Promise((ok) => setTimeout(ok, 500));
+    }
+    found.innerHTML = "<li>the scan did not finish; try again</li>";
+  } catch (e) {
+    found.innerHTML = "";  // Network mode: the box answered why it will not scan
+    $("#wifi-msg").textContent = e.message;
+  }
+}
+
+function renderFound(r) {
+  const rows = r.state === "failed" ? "" : r.networks
+    .map((n) => `<li><a data-ssid="${esc(n.ssid)}">${esc(n.ssid)}</a>
+      <span class="small">${n.rssi} dBm${n.secure ? " · locked" : ""}</span></li>`)
+    .join("");
+  $("#found").innerHTML = rows || `<li>${esc(r.state === "failed" ? r.reason || "the scan failed" : "none found")}</li>`;
+  document.querySelectorAll("#found a").forEach((a) => (a.onclick = () => {
+    document.activeElement?.blur();  // a tile being edited commits first, so it cannot overwrite this
+    newSsid = a.dataset.ssid;  // what the scan was for: the name, typed in one tap
+    renderWifiInputs();
+    $("#w-pass").click();  // and straight on to the password
+  }));
+}
+
+$("#wifi-scan").onclick = scanWifi;
+
 function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 }
