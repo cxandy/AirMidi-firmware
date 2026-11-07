@@ -50,7 +50,8 @@ rtpMIDI.** This one line answers most "why can't my iPhone connect over Wi-Fi" t
 
 ## What is tested where
 
-- `lib/captive.c`: 8 Unity tests (`test/test_captive.c`) — the A/ANY answer, the empty AAAA answer, drops for other
-  types, replies, bad opcodes, an unparseable name, and a fuzz that no datagram produces an over-long reply.
-- The portal end to end is a hardware-in-the-loop check: a phone joining the AP should auto-open the page. There is
-  no host test for it (it needs a real radio and a real phone), so `tools/hil/` covers it on the bench.
+- `lib/captive.c`: 8 Unity tests (`test/test_captive.c`) — the A/ANY answer, the empty answer for any other type,
+  drops for replies, bad opcodes and an unparseable name, and a fuzz that no datagram produces an over-long reply.
+- The portal end to end has no test: it needs a real radio and a real phone, so it is a bench check by hand — join
+  the setup access point and the page should open on its own. `tools/hil/web_test.py` covers the page and the API
+  in Network mode, not the portal.

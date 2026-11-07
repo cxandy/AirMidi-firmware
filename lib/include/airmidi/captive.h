@@ -1,8 +1,8 @@
 // The setup access point's DNS answer: everything resolves to the box. A phone that joins the open network then
-// reaches the web UI by opening any name at all, and the portal (below) sends it on to the setup page, so nobody
-// has to be told the address. RFC 1035, questions only: a query's first question is echoed, an A question is
-// answered with one record, an AAAA question is answered with none (an empty answer is quicker than a timeout),
-// and anything that is not a plain query is dropped.
+// reaches the web UI by opening any name at all, and the web server's 404 handler (webui.c) sends it on to the
+// setup page, so nobody has to be told the address. RFC 1035, questions only: a query's first question is echoed,
+// an A (or ANY) question is answered with one record, every other type with none (an empty answer is quicker than
+// a timeout), and anything that is not a plain query is dropped.
 #pragma once
 
 #include <stddef.h>

@@ -41,7 +41,8 @@ A third board is a bare ESP32-S3 on a board of its own (`CONFIG_AIRMIDI_BOARD_DI
 and flashing ride the S3's native USB port (USB Serial JTAG; there is no USB-UART bridge on the board), and the console
 moves to TinyUSB's serial port on the same port once the app starts. The TRS port hangs straight off two pins, each
 through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15 (held high, so the port is Type A), and the input is a
-6N137 optocoupler on GPIO21. A plain LED on GPIO48 shows the box's state as on the receiver.
+6N137 optocoupler on GPIO21. A plain LED on GPIO48 shows the box's state as on the receiver. The board layer
+([board-and-settings.md](docs/design/board-and-settings.md)) is the only code that names a GPIO.
 
 **[hardware/](hardware)** has the schematic, the KiCad project, Gerbers, BOM and the printable enclosure, with the
 board's revision history: the photo shows rev A, and rev B fixes what its bring-up found.

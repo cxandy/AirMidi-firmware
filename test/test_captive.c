@@ -6,7 +6,7 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-static const uint32_t box = 0xC0A80401;  // 192.168.4.1, network byte order
+static const uint32_t box = 0xC0A80401;  // 192.168.4.1, host order
 
 // Query for `name`, type `qtype`: header (id 0x1234, RD set, one question), the name as labels, type and class.
 static size_t query(uint8_t *out, const char *name, uint16_t qtype) {
@@ -62,7 +62,7 @@ static void test_aaaa_gets_an_empty_answer(void) {
     TEST_ASSERT_EQUAL_HEX8(0, out[6]), TEST_ASSERT_EQUAL_HEX8(0, out[7]);  // no answer
 }
 
-static void test_other_types_are_dropped(void) {
+static void test_other_types_get_an_empty_answer(void) {
     uint8_t in[64], out[CAPTIVE_DNS_MAX];
     size_t len = query(in, "box", 16);  // TXT: nothing this box can say
     TEST_ASSERT_EQUAL_size_t(len, captive_dns_reply(in, len, out, sizeof out, box));
@@ -121,7 +121,7 @@ int main(void) {
     RUN_TEST(test_a_query_is_answered_with_the_box);
     RUN_TEST(test_any_is_answered_too);
     RUN_TEST(test_aaaa_gets_an_empty_answer);
-    RUN_TEST(test_other_types_are_dropped);
+    RUN_TEST(test_other_types_get_an_empty_answer);
     RUN_TEST(test_replies_and_other_opcodes_are_dropped);
     RUN_TEST(test_a_name_that_does_not_parse_is_dropped);
     RUN_TEST(test_a_reply_that_does_not_fit_is_dropped);

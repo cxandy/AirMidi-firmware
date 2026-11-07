@@ -483,7 +483,7 @@ uint8_t net_ap_channel(void) {
 // web UI at whatever address its captive-portal check asked for, and the portal's 302 (webui.c) sends it on to
 // the page. Outside Setup mode the socket is closed: a station's DNS is its router's job.
 #define DNS_PORT 53
-#define DNS_AP_IP 0xC0A80401u  // 192.168.4.1, as captive_dns_reply() writes it out
+#define DNS_AP_IP 0xC0A80401u  // 192.168.4.1 in host order, the form captive_dns_reply() takes
 #define DNS_STACK 3584
 
 static void dns_task(void *arg) {
@@ -513,7 +513,7 @@ static void dns_task(void *arg) {
         struct sockaddr_in from;
         socklen_t from_len = sizeof from;
         int n = recvfrom(sock, in, sizeof in, 0, (struct sockaddr *)&from, &from_len);
-        if (n <= 0) continue;  // the timeout, or a datagram longer than this buffer
+        if (n <= 0) continue;  // the 200 ms timeout, or a zero-length datagram
         size_t reply = captive_dns_reply(in, (size_t)n, out, sizeof out, DNS_AP_IP);
         if (reply) sendto(sock, out, reply, 0, (const struct sockaddr *)&from, from_len);
     }
