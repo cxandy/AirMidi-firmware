@@ -35,6 +35,10 @@ address to keep: the access point's address stops working the moment the box joi
 to whatever address the router hands out. The phone the portal opened the page for already knows the address; the
 card is for a second phone, which joins the open network and opens the same address.
 
+Adding a network only stores it. The wifi page then offers `switch to network mode`, and asks first: the switch
+restarts the box (BLE goes off in Network mode), which closes the access point the phone is on, so the confirm spells
+out where to come back to.
+
 ## Phones: the web console is the path, not network MIDI
 
 Both iOS and Android reach the box's controls through the browser — the status page and the play page (faders, pads

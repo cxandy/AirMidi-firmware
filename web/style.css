@@ -133,6 +133,7 @@ main { padding: calc(60 * var(--u)) calc(120 * var(--u)) calc(60 * var(--u)); ma
 .portal-url { display: flex; align-items: center; gap: calc(30 * var(--u)); margin: calc(20 * var(--u)) 0; }
 .portal-url .value { color: var(--heather-d); }
 .portal .note a, #wifi-addr a { color: var(--heather-d); }  /* an address is a link */
+#wifi-msg a { color: var(--ac); }  /* the next step after a network is stored */
 
 /* the wifi page: one scan action above the list of what it finds */
 #wifi-scan { width: auto; gap: calc(30 * var(--u)); margin-bottom: calc(40 * var(--u)); }

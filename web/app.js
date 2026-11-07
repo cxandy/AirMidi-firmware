@@ -634,12 +634,29 @@ $("#add-net").onclick = async () => {
   try {
     await post("/api/wifi", { ssid: newSsid, pass: newPass });
     newSsid = newPass = "";
-    $("#wifi-msg").textContent = "stored; the box joins it in network mode";
+    // Storing is all this does; the network is used once the box is in network mode, so say that and offer it.
+    $("#wifi-msg").innerHTML = status.mode === "network"
+      ? "stored; it is tried the next time the box joins"
+      : `stored — <a id="to-network">switch to network mode</a> to use it`;
+    if (status.mode !== "network") $("#to-network").onclick = switchToNetwork;
   } catch (e) {
     $("#wifi-msg").textContent = e.message;
   }
   loadNetworks();
 };
+
+// Switching mode restarts the box (it turns BLE off), which closes the setup access point under this page.
+async function switchToNetwork() {
+  const url = boxUrl();
+  if (!confirm(`the box restarts into network mode: the setup wi-fi closes and this page stops answering.\n` +
+               `rejoin your own wi-fi and open ${url}. if it cannot join, hold the button 8 s to come back here.`))
+    return;
+  try {
+    await post("/api/mode", { mode: "network" });
+  } catch (e) {
+    // the restart cuts the connection before the box can answer
+  }
+}
 
 // What is around the box: POST starts the scan, GET reports it done and carries the list (strongest first).
 async function scanWifi() {

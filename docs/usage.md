@@ -149,7 +149,7 @@ status 页的 mode 选择器、settings 页的六项、wifi 页和 update 页，
 2. 打开 `http://192.168.4.1`，进入 wifi 页：点 ↻ 扫描（几秒），从列表里点一行填好 SSID，输入密码后点 `+` 添加；
    也可以直接手动输入 SSID 和密码。网页只负责保存，切到 Network 模式才去连；手机 App 里的试连
    （`/api/wifi/try`）可以先验证密码再保存；
-3. 回 status 页把模式切到 `network`；
+3. 切到 `network` 模式：点 wifi 页提示行里的 `switch to network mode`（会先确认一次），或者回 status 页用 mode 选择器；
 4. 盒子重启后加入网络，网页地址变成 `http://<名字>.local`（wifi 页顶部会显示这个名字和它拿到的 IP，可复制）。
 
 只支持 2.4 GHz 和开放/WPA2 类网络，企业认证（802.1X）不支持。Setup 模式下如果同时试连家里的网络，热点会跟着
