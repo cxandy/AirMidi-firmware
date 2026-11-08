@@ -266,11 +266,14 @@ void app_main(void) {
             power_shutdown();
         }
         net_state_t ns = net_state();
-        ui_set_led(power_low()            ? LED_LOW_BATTERY
-                   : ns == NET_AP         ? LED_SETUP
-                   : ns == NET_JOINING    ? LED_WIFI_JOINING
-                   : ble_midi_connected() ? LED_CONNECTED
-                                          : LED_ADVERTISING);
+        // A slot reads connected before BLE ever starts (nothing has written its free value into it yet), so Network
+        // mode without BLE showed the connected LED: only ask for a connection when the stack is running.
+        bool on_ble = ble_running && ble_midi_connected();
+        ui_set_led(power_low()         ? LED_LOW_BATTERY
+                   : ns == NET_AP      ? LED_SETUP
+                   : ns == NET_JOINING ? LED_WIFI_JOINING
+                   : on_ble            ? LED_CONNECTED
+                                       : LED_ADVERTISING);
 
         int c = getchar();              // console: 's' counters, 'i' image info, 'P'/'N'/'S' mode, 'm' merge test hook,
                                         // '0'-'2' power mode, 'B' bootloader (S3)
