@@ -145,6 +145,7 @@ function renderStatus() {
   renderPortal();
   renderWifiAddress();
   renderWifiSwitch();
+  $("#setup-ask").hidden = status.mode !== "network";
 }
 
 function fmtUptime(ms) {
@@ -153,10 +154,25 @@ function fmtUptime(ms) {
 }
 
 document.querySelectorAll("#mode a").forEach((a) => (a.onclick = async () => {
-  if (a.dataset.v === "setup" && !confirm("setup mode leaves this network and opens the box's own access point")) return;
+  if (a.dataset.v === "setup") {  // asked in the page, like the wifi page's switch: a native confirm() is swallowed by
+                                  // the captive-portal browser that opens this page, so it was a tap that did nothing
+    $("#setup-ask").hidden = status?.mode === "setup";
+    return;
+  }
   await post("/api/mode", { mode: a.dataset.v });
   poll();
 }));
+
+$("#setup-cancel").onclick = () => ($("#setup-ask").hidden = true);
+
+// Setup makes the box leave this wi-fi, so the answer never comes back: the phone is left next to a silent box until
+// it joins the box's own network.
+$("#setup-go").onclick = async () => {
+  try {
+    await post("/api/mode", { mode: "setup" });
+  } catch (e) {
+  }
+};
 
 // ---- setup mode: the portal --------------------------------------------------------------------------------------
 
