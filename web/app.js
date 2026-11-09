@@ -145,7 +145,7 @@ function renderStatus() {
   renderPortal();
   renderWifiAddress();
   renderWifiSwitch();
-  $("#setup-ask").hidden = status.mode !== "network";
+  // the setup ask is a transient the taps own (it would otherwise reappear over its own cancel every poll tick)
 }
 
 function fmtUptime(ms) {
@@ -160,6 +160,7 @@ document.querySelectorAll("#mode a").forEach((a) => (a.onclick = async () => {
     return;
   }
   await post("/api/mode", { mode: a.dataset.v });
+  $("#setup-ask").hidden = true;
   poll();
 }));
 
