@@ -128,7 +128,7 @@ status 页的 mode 选择器、settings 页的六项、wifi 页和 update 页，
 
 | 位置 | 项目 | 取值 / 默认 | 作用 | 生效方式 |
 |---|---|---|---|---|
-| status | mode | `play` / `network` / `setup`，默认 `play` | 盒子工作模式 | 保存；要开关 BLE 时自动重启；网页上切到 setup 会先展开一段说明，点 `switch` 才真的切 |
+| status | mode | `play` / `network` / `setup`，默认 `play` | 盒子工作模式 | 保存；要开关 BLE 时自动重启；网页上点哪个模式都先展开一段说明，点 `switch` 才真的切（切过去会让当前网页断开，说明里写明了） |
 | settings | 名称 name | 1–31 个字母、数字或 `-`（不能以 `-` 开头结尾），默认 `airmidi-` + MAC 末两字节 | BLE 广播名、`<名字>.local`、USB MIDI 名称、Setup 热点名 | 重启（网页地址随之改变） |
 | settings | SysEx 超时 | 50–5000 ms，默认 500 | 一个 SysEx 消息最多占用合并输出的时间；多来源汇聚到同一输出时才需要调 | 重启 |
 | settings | ble in network | 开 / 关，默认关 | Network 模式下是否仍开 BLE（开了会拖慢网络 MIDI 约 16 ms） | 下个 Network 会话；已在该模式则重启 |

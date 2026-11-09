@@ -40,8 +40,10 @@ Adding a network only stores it. While one is stored and the box is not in netwo
 browser a phone reaches this from can swallow native dialogs, leaving a tap that does nothing. The switch restarts
 the box (BLE goes off in Network mode) and closes the access point, so the question says where to come back to.
 
-The mode selector asks the same way, in the page: setup leaves the wi-fi this page sits on, and a swallowed native
-dialog would be a tap that does nothing on the very phone whose browser this page opened in.
+The mode selector asks the same way, in the page, and so does every mode: a swallowed native dialog would be a tap
+that does nothing on the very phone whose browser this page opened in, and each change takes this page's connection
+down (play switches the radio off, setup closes it for its own access point, network restarts into the saved one),
+so the tap only opens the word and the switch sends it.
 
 ## Phones: the web console is the path, not network MIDI
 

@@ -145,7 +145,7 @@ function renderStatus() {
   renderPortal();
   renderWifiAddress();
   renderWifiSwitch();
-  // the setup ask is a transient the taps own (it would otherwise reappear over its own cancel every poll tick)
+  // the mode ask is a transient the taps own (it would otherwise reappear over its own cancel every poll tick)
 }
 
 function fmtUptime(ms) {
@@ -153,26 +153,29 @@ function fmtUptime(ms) {
   return h ? `${h} h ${m % 60} min` : m ? `${m} min ${s % 60} s` : `${s} s`;
 }
 
-document.querySelectorAll("#mode a").forEach((a) => (a.onclick = async () => {
-  if (a.dataset.v === "setup") {  // asked in the page, like the wifi page's switch: a native confirm() is swallowed by
-                                  // the captive-portal browser that opens this page, so it was a tap that did nothing
-    $("#setup-ask").hidden = status?.mode === "setup";
-    return;
-  }
-  await post("/api/mode", { mode: a.dataset.v });
-  $("#setup-ask").hidden = true;
-  poll();
+const MODE_ASK = {
+  play: "play turns the wi-fi off: this page goes down until you switch the box back",
+  network: "network restarts the box into your saved wi-fi",
+  setup: "setup leaves this network and opens the box's own wi-fi: join that from the phone and this page answers again",
+};
+
+document.querySelectorAll("#mode a").forEach((a) => (a.onclick = () => {
+  // asked in the page, like the wifi page's switch: a native confirm() is swallowed by the captive-portal browser
+  // that opens this page, so it was a tap that did nothing. Every mode change takes this page's connection down
+  // (play switches the radio off, setup closes it for its own network, network restarts into the saved one), so
+  // all three get the same word.
+  $("#mode-ask-text").textContent = MODE_ASK[a.dataset.v] || "";
+  $("#mode-ask").dataset.mode = a.dataset.v;
+  $("#mode-ask").hidden = status?.mode === a.dataset.v;
 }));
 
-$("#setup-cancel").onclick = () => ($("#setup-ask").hidden = true);
+$("#mode-cancel").onclick = () => ($("#mode-ask").hidden = true);
 
 // Setup makes the box leave this wi-fi, so the answer never comes back: the phone is left next to a silent box until
 // it joins the box's own network.
-$("#setup-go").onclick = async () => {
-  try {
-    await post("/api/mode", { mode: "setup" });
-  } catch (e) {
-  }
+$("#mode-go").onclick = () => {
+  post("/api/mode", { mode: $("#mode-ask").dataset.mode }).catch(() => {
+  });
 };
 
 // ---- setup mode: the portal --------------------------------------------------------------------------------------
