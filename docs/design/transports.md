@@ -84,6 +84,12 @@ Double press = all notes off on every output (sustain off, all sound off, all no
 press held past 2 s turns the ESP-NOW cable on or off, which saves and restarts. It fires on the release: a restart
 while the button is down would strap the boards whose button is BOOT (GPIO0) into the ROM download mode.
 
+A short press opens the phone pairing window for 2 minutes ([config-over-ble.md](config-over-ble.md)) and rescans
+the TRS devices ([midi-ci.md](midi-ci.md)); on a one-key box the window is otherwise reachable only by pulling the
+power. The one LED is a plain blue one, so its language is flashes only: the mode is how many flashes, connected is
+steady with the same number of dips (the table is in [usage.md](../usage.md) §6); rev B's four-key panel lights four
+separate LEDs from `panel_state_t` instead.
+
 ## Battery (`power`, `lib/src/ui.c`)
 
 Once a second: 16 calibrated ADC readings of A0 (half the switched cell), times two, plus a per-board correction
