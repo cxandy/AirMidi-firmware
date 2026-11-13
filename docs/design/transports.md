@@ -189,10 +189,12 @@ the sender a peer; one silent for 5 s is gone. MIDI goes to each peer as UMP by 
 acknowledges and retries; the receiver drops the duplicates a lost acknowledgement causes, by sequence number, and
 counts what never came. The port is UMP-native: each box translates at its own MIDI 1.0 outputs.
 
-Both boxes need one channel. A box joined to an access point is on its channel and stays there. A free box looks:
-back to channel 1 every other step, so two free boxes meet there, and in between to 6, 11 and the rest. Each box
-moves at its own pace, so two cannot keep missing each other in step. A box in Play mode finds one in Network mode
-by itself (within ~25 s); in the test, on channel 6, at once.
+Both boxes need one channel. A box joined to an access point is on its channel and stays there, and so is one in
+Setup mode on its own access point (channel 1): ESP-NOW never hops away from either. A free box looks: back to
+channel 1 every other step, so two free boxes meet there, and in between to 6, 11 and the rest. Each box moves at
+its own pace, so two cannot keep missing each other in step. A box in Play mode finds one in Network mode by itself
+(within ~25 s); in the test, on channel 6, at once. One in Setup mode is only reachable while the other is on
+channel 1, which is the cost of not moving its access point under a phone that is using it.
 
 Found on the dev kit: at the full 20 dBm none of its Wi-Fi frames arrived anywhere (the C6 acknowledged no unicast,
 and the access point never answered its authentication, "reason 2" on every join) while its BLE worked. At 10 and
