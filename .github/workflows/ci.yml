@@ -47,11 +47,14 @@ jobs:
           path: firmware
           # build.sh signs the image with a throwaway key it generates (CI builds are not for installing). The action
           # sets git's safe.directory itself and pastes this line into a single-quoted bash -c: no single quotes here.
-          command: ./build.sh ${{ matrix.board }}
+          # Then merge bootloader, partition table and app at the offsets flash_args names into one file at 0x0, which
+          # is what a browser flasher takes.
+          command: ./build.sh ${{ matrix.board }} && cd build_${{ matrix.board }} && esptool.py --chip ${{ matrix.target }} merge_bin -o ../airmidi-${{ matrix.board }}-merged.bin @flash_args
       - uses: actions/upload-artifact@v7
         with:
           name: airmidi-${{ matrix.board }}
           path: |
+            firmware/airmidi-${{ matrix.board }}-merged.bin
             firmware/build_${{ matrix.board }}/airmidi.bin
             firmware/build_${{ matrix.board }}/bootloader/bootloader.bin
             firmware/build_${{ matrix.board }}/partition_table/partition-table.bin
