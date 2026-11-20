@@ -151,9 +151,29 @@ static void test_led_patterns_duty(void) {
     TEST_ASSERT_EQUAL(300, lit_ms(LED_ADVERTISING, 0, 3000, 0));
     TEST_ASSERT_EQUAL(3000, lit_ms(LED_CONNECTED, 1000, 3000, 0));
     TEST_ASSERT_EQUAL(1500, lit_ms(LED_WIFI_JOINING, 0, 3000, 0));
+    TEST_ASSERT_EQUAL(3000, lit_ms(LED_WIFI_CONNECTED, 0, 3000, 0));
+    TEST_ASSERT_EQUAL(300, lit_ms(LED_ESPNOW_WAITING, 0, 3000, 0));
+    TEST_ASSERT_EQUAL(3000, lit_ms(LED_ESPNOW_CONNECTED, 0, 3000, 0));
     TEST_ASSERT_EQUAL(400, lit_ms(LED_SETUP, 0, 3000, 0));
     TEST_ASSERT_EQUAL(360, lit_ms(LED_LOW_BATTERY, 0, 4000, 0));
     TEST_ASSERT_EQUAL(1500, lit_ms(LED_OTA, 0, 3000, 0));
+}
+
+static void test_led_colour_names_the_link(void) {
+    // Blue for Play's BLE link, green for the network, magenta for the ESP-NOW cable; amber, purple and red are states
+    // of the box rather than links.
+    led_rgb_t blue = led_color(LED_CONNECTED), green = led_color(LED_WIFI_CONNECTED);
+    led_rgb_t magenta = led_color(LED_ESPNOW_CONNECTED);
+    TEST_ASSERT_TRUE(blue.b > blue.r);
+    TEST_ASSERT_TRUE(green.g > green.b);
+    TEST_ASSERT_TRUE(magenta.r > magenta.g && magenta.b > magenta.g);
+    TEST_ASSERT_EQUAL(0, led_color(LED_SETUP).b);
+    TEST_ASSERT_EQUAL(0, led_color(LED_OTA).g);
+    TEST_ASSERT_EQUAL(0, led_color(LED_OFF).r + led_color(LED_OFF).g + led_color(LED_OFF).b);
+    // A link keeps its colour whether or not it is up: only the pattern changes.
+    TEST_ASSERT_EQUAL(led_color(LED_CONNECTED).b, led_color(LED_ADVERTISING).b);
+    TEST_ASSERT_EQUAL(led_color(LED_WIFI_CONNECTED).g, led_color(LED_WIFI_JOINING).g);
+    TEST_ASSERT_EQUAL(led_color(LED_ESPNOW_CONNECTED).r, led_color(LED_ESPNOW_WAITING).r);
 }
 
 static void test_activity_flicker(void) {
@@ -226,6 +246,7 @@ int main(void) {
     RUN_TEST(test_double_hold_never_enters_setup);
     RUN_TEST(test_time_wraps);
     RUN_TEST(test_led_patterns_duty);
+    RUN_TEST(test_led_colour_names_the_link);
     RUN_TEST(test_activity_flicker);
     RUN_TEST(test_percent_curve);
     RUN_TEST(test_low_warning_with_hysteresis);

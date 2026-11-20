@@ -80,6 +80,12 @@ bool led_level(led_state_t s, uint32_t now, uint32_t last_activity) {
             return !(last_activity && now - last_activity < LED_ACTIVITY_MS);
         case LED_WIFI_JOINING:
             return now % 500 < 250;
+        case LED_WIFI_CONNECTED:
+            return true;
+        case LED_ESPNOW_WAITING:
+            return flashes(now, 1000, 1, 100, 0);
+        case LED_ESPNOW_CONNECTED:
+            return true;
         case LED_SETUP:
             return flashes(now, 1500, 2, 100, 150);
         case LED_LOW_BATTERY:
@@ -88,6 +94,30 @@ bool led_level(led_state_t s, uint32_t now, uint32_t last_activity) {
             return now % 100 < 50;
         default:
             return false;
+    }
+}
+
+// Blue for the BLE link, green for the network, magenta for the ESP-NOW cable. Amber is Setup, red the battery's
+// warning and purple an update: states of the box rather than a link.
+led_rgb_t led_color(led_state_t s) {
+    switch (s) {
+        case LED_ADVERTISING:
+        case LED_CONNECTED:
+            return (led_rgb_t){0, 64, 255};
+        case LED_WIFI_JOINING:
+        case LED_WIFI_CONNECTED:
+            return (led_rgb_t){0, 255, 64};
+        case LED_ESPNOW_WAITING:
+        case LED_ESPNOW_CONNECTED:
+            return (led_rgb_t){255, 0, 160};
+        case LED_SETUP:
+            return (led_rgb_t){255, 160, 0};
+        case LED_LOW_BATTERY:
+            return (led_rgb_t){255, 0, 0};
+        case LED_OTA:
+            return (led_rgb_t){160, 0, 255};
+        default:
+            return (led_rgb_t){0, 0, 0};
     }
 }
 

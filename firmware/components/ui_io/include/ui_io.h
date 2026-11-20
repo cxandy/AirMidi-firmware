@@ -2,6 +2,8 @@
 // themselves are lib/ui (host-tested).
 #pragma once
 
+#include <stdint.h>
+
 #include "airmidi/ui.h"
 
 // on_button runs in the esp_timer task: keep it short (set a flag, queue a message).
@@ -9,3 +11,7 @@ void ui_start(void (*on_button)(button_event_t ev));
 
 // What the LED should show; MIDI activity (from the bus) flickers it in LED_CONNECTED.
 void ui_set_led(led_state_t s);
+
+// A white flash for a gesture with nothing else to show for it (short press, all notes off, boot). It covers the
+// state for that long, then the state returns.
+void ui_flash(uint32_t ms);

@@ -54,18 +54,31 @@ bool button_armed(const button_t *b);
 
 typedef enum {  // highest priority last: the firmware shows the most important state
     LED_OFF,
-    LED_ADVERTISING,   // nothing connected: 100 ms flash every second
-    LED_CONNECTED,     // on, with a short dark flicker on MIDI activity
-    LED_WIFI_JOINING,  // 2 Hz blink
-    LED_SETUP,         // double flash every 1.5 s
-    LED_LOW_BATTERY,   // triple flash every 2 s
-    LED_OTA,           // 10 Hz blink
+    LED_ADVERTISING,       // nothing connected: 100 ms flash every second
+    LED_CONNECTED,         // on, with a short dark flicker on MIDI activity
+    LED_WIFI_JOINING,      // 2 Hz blink
+    LED_WIFI_CONNECTED,    // on: the box is on the network (Network mode with BLE off shows nothing else)
+    LED_ESPNOW_WAITING,    // the cable is on, no box of the group heard: 100 ms flash every second
+    LED_ESPNOW_CONNECTED,  // a box of the group is there
+    LED_SETUP,             // double flash every 1.5 s
+    LED_LOW_BATTERY,       // triple flash every 2 s
+    LED_OTA,               // 10 Hz blink
 } led_state_t;
 
 #define LED_ACTIVITY_MS 40  // how long MIDI activity darkens a steady LED
 
 // LED level for a state at a time. last_activity_ms: when the last MIDI message passed (0 = never).
 bool led_level(led_state_t s, uint32_t now_ms, uint32_t last_activity_ms);
+
+// ---- LED colour -----------------------------------------------------------------------------------------------
+
+typedef struct {
+    uint8_t r, g, b;
+} led_rgb_t;
+
+// The colour of a state: the pattern says what the box is doing, the colour which link it is on. Worth nothing on a
+// board with a plain LED, which shows the pattern alone.
+led_rgb_t led_color(led_state_t s);
 
 // ---- battery -------------------------------------------------------------------------------------------------
 

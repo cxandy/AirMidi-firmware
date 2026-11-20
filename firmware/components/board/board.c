@@ -59,8 +59,9 @@ static const board_t the_board = {
     .name = "bare ESP32-S3 with a TRS port",
     .midi_tx = GPIO_NUM_14,  // TRS TIP: the data out on a Type A port
     .midi_rx = GPIO_NUM_21,  // TRS IN, through the 6N137
-    .led = GPIO_NUM_48,      // a plain LED on the board, active high
-    .button = GPIO_NUM_0,    // BOOT, with the board's pull-up
+    .led = GPIO_NUM_48,      // one WS2812 on the 5 V rail, its data line here
+    .led_rgb = true,
+    .button = GPIO_NUM_0,  // BOOT, with the board's pull-up
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = -1,  // no battery: always "on USB"
     // The bare board is USB-powered like the dev kit: hold Wi-Fi to 15 dBm, where its 3.3 V does not sag.
