@@ -167,6 +167,11 @@ static void test_led_colour_names_the_link(void) {
     TEST_ASSERT_TRUE(blue.b > blue.r);
     TEST_ASSERT_TRUE(green.g > green.b);
     TEST_ASSERT_TRUE(magenta.r > magenta.g && magenta.b > magenta.g);
+    // Pure primaries: a tinted value made "green" read as cyan and "magenta" as pink on the real LED.
+    TEST_ASSERT_EQUAL(0, blue.r + blue.g);
+    TEST_ASSERT_EQUAL(0, green.r + green.b);
+    TEST_ASSERT_EQUAL(0, magenta.g);
+    TEST_ASSERT_EQUAL(magenta.r, magenta.b);
     TEST_ASSERT_EQUAL(0, led_color(LED_SETUP).b);
     TEST_ASSERT_EQUAL(0, led_color(LED_OTA).g);
     TEST_ASSERT_EQUAL(0, led_color(LED_OFF).r + led_color(LED_OFF).g + led_color(LED_OFF).b);

@@ -103,13 +103,13 @@ led_rgb_t led_color(led_state_t s) {
     switch (s) {
         case LED_ADVERTISING:
         case LED_CONNECTED:
-            return (led_rgb_t){0, 64, 255};
+            return (led_rgb_t){0, 0, 255};
         case LED_WIFI_JOINING:
         case LED_WIFI_CONNECTED:
-            return (led_rgb_t){0, 255, 64};
+            return (led_rgb_t){0, 255, 0};
         case LED_ESPNOW_WAITING:
         case LED_ESPNOW_CONNECTED:
-            return (led_rgb_t){255, 0, 160};
+            return (led_rgb_t){255, 0, 255};
         case LED_SETUP:
             return (led_rgb_t){255, 160, 0};
         case LED_LOW_BATTERY:
