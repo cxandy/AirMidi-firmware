@@ -87,7 +87,7 @@ while the button is down would strap the boards whose button is BOOT (GPIO0) int
 A short press opens the phone pairing window for 2 minutes ([config-over-ble.md](config-over-ble.md)) and rescans
 the TRS devices ([midi-ci.md](midi-ci.md)); on a one-key box the window is otherwise reachable only by pulling the
 power. The one-key boards have one LED: s3direct's is a WS2812B driven over RMT (green/red/blue order, 10 MHz
-resolution, about a quarter of full brightness), the others a plain blue one. Its language separates the two
+resolution, about 6% of full brightness), the others a plain blue one. Its language separates the two
 questions: the colour names the link (blue BLE, green the network, magenta the ESP-NOW cable, amber Setup) and the
 pattern says whether that link is up — steady when it is, a short flash every second while it is not (table in
 [usage.md](../usage.md) §6). A plain LED shows the pattern alone. Rev B's four-key panel lights four separate LEDs

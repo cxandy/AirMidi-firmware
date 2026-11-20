@@ -12,9 +12,9 @@
 // channel runs at 10 MHz, so a tick is 0.1 us and a bit is 12 of them.
 #define RGB_TICKS 12
 #define RGB_ONE_HIGH 9  // the high half of a 1, and so the low half of a 0
-// A quarter of full brightness is plenty for a status light: one WS2812 at full white is ~60 mA, and this keeps the
-// 5 V rail and the dark stage alike calm.
-#define RGB_LEVEL 64  // of 255
+// About 6% of full brightness is plenty for a status light: a WS2812 at full white is ~60 mA, and 16/255 keeps the
+// 5 V rail and the dark stage alike calm. Raise it for daylight, not for taste.
+#define RGB_LEVEL 16  // of 255
 
 static button_t button;
 static void (*handler)(button_event_t);
