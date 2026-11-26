@@ -15,7 +15,8 @@ in a MIDI interface (parsing, packing, translation, routing, merging) lives ther
 - **format**: clang-format 18.1.8 in check mode over everything except the vendored Unity and the throwaway
   spikes. The version is pinned (`.clang-format` names it, CI and `tools/check.sh` run exactly that one through
   pipx/uv) because clang-format output changes between major versions.
-- **firmware**: both boards built in the `espressif/idf` image (C6 and S3), binaries uploaded as artifacts.
+- **firmware**: every board built in the `espressif/idf` image (the C6 and S3 targets), binaries uploaded as
+  artifacts.
 
 `tools/check.sh` runs the same three things locally (`--fix` reformats).
 

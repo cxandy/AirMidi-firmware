@@ -42,6 +42,8 @@ the pairing window is open, in which case it joins the list:
 - in Setup mode (an 8 s button press: physical access);
 - for 2 minutes after a power-on or a reset by hand, not after the box's own restarts (a mode or settings change
   restarts it, and the LAN web page can cause that);
+- for 2 minutes on a short press of the one button (which is also the MIDI-CI rescan): the window is the only thing
+  that press can do that a phone needs, and it is what the box has instead of rev B's BLE key;
 - for 2 minutes when a trusted phone (or the web page) asks, to add another (`POST /api/phones/window`).
 
 `DELETE /api/phones` forgets them all. Rev B's BLE button ("hold = pair") will open the window too. The web page on

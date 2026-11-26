@@ -38,9 +38,18 @@ H11L1 instead of the 6N138 (same polarity on RX), and a panel instead of the but
 and the RTC pull-up, and `power_confirm_wake()` at boot sends the box back to sleep unless the button is still down
 1 s after the press. The release manifest has its own image (`s3b`).
 
+**A bare ESP32-S3 on a board of its own** (`build.sh s3direct`, `CONFIG_AIRMIDI_BOARD_DIRECT_S3`).
+No USB-UART bridge: power and flashing ride the S3's native USB port (USB Serial JTAG), and the console moves to
+TinyUSB's serial port once the app starts (`CONFIG_ESP_CONSOLE_NONE`, as for the other S3 boards). The TRS port hangs
+straight off two pins, each through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15. A TRS port's type is
+which of the two carries the data, so the firmware holds the RING high and runs the UART on the TIP: Type A. (Type B,
+the same with the two pins swapped, is pending.) The input is a 6N137 optocoupler on GPIO21. A WS2812B on GPIO48
+(5 V, data straight from the pin) shows the state in colour, and BOOT (GPIO0) is the button.
+
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
-whenever Wi-Fi starts. The dev kit is held to 15 dBm. At 20 dBm none of its Wi-Fi frames arrived anywhere, while its
-BLE worked: most likely its 3.3 V sags at the transmit peaks on a USB port ([transports.md](transports.md), ESP-NOW).
+whenever Wi-Fi starts. The dev kit and the bare S3 are held to 15 dBm. At 20 dBm none of the dev kit's Wi-Fi
+frames arrived anywhere, while its BLE worked: most likely its 3.3 V sags at the transmit peaks on a USB port
+([transports.md](transports.md), ESP-NOW).
 
 **The S3 and RAM.** Without PSRAM the S3 had 7 KB of heap left in Play mode. PSRAM is used where the board has it
 (8 MB octal on the XIAO S3 and on this kit; a board without it still boots), with Wi-Fi, lwIP and NimBLE buffers

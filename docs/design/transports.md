@@ -78,9 +78,20 @@ the lower latency wins. Measured numbers are in [measurements.md](../measurement
 ## Button and LED (`ui_io`, `lib/src/ui.c`)
 
 A 10 ms esp_timer samples the button and drives the LED. The gestures (debounced; short, double, long on release
-at 2-8 s, very long fires at 8 s while still held) and the blink patterns are pure functions of (input, time) in
-`lib/`, tested on the host including the millisecond clock wrapping. Double press = all notes off on every output
-(sustain off, all sound off, all notes off on 16 channels).
+at 2-8 s, very long fires at 8 s while still held, double-long arms at 2 s and fires on the release) and the blink
+patterns are pure functions of (input, time) in `lib/`, tested on the host including the millisecond clock wrapping.
+Double press = all notes off on every output (sustain off, all sound off, all notes off on 16 channels); a second
+press held past 2 s turns the ESP-NOW cable on or off, which saves and restarts. It fires on the release: a restart
+while the button is down would strap the boards whose button is BOOT (GPIO0) into the ROM download mode.
+
+A short press opens the phone pairing window for 2 minutes ([config-over-ble.md](config-over-ble.md)) and rescans
+the TRS devices ([midi-ci.md](midi-ci.md)); on a one-key box the window is otherwise reachable only by pulling the
+power. The one-key boards have one LED: s3direct's is a WS2812B driven over RMT (green/red/blue order, 10 MHz
+resolution, about 9% of full brightness, the white flashes at a third of that per channel so three channels do not
+glare), the others a plain blue one. Its language separates the two questions: the colour names the link (blue BLE,
+green the network, magenta the ESP-NOW cable, amber Setup) and the pattern says whether that link is up — steady
+when it is, a short flash every second while it is not. A plain LED shows the pattern alone. Rev B's four-key panel
+lights four separate LEDs from `panel_state_t` instead.
 
 ## Battery (`power`, `lib/src/ui.c`)
 
@@ -155,16 +166,21 @@ port named after the box, and a CDC serial port for the console. USB MIDI 2.0 is
 kind, SysEx 3 bytes a packet, MIDI 2.0 translated down as for TRS) and packets back into bytes for a parser; its
 tests run every SysEx length through a clock-interrupted round trip.
 
-TinyUSB takes the S3's only USB PHY from the built-in USB-Serial-JTAG, and that cost three findings on the dev kit:
+TinyUSB takes the S3's only USB PHY from the built-in USB-Serial-JTAG, and that cost four findings:
 
 - The console moves to the CDC port, and with it flashing: esptool's reset pattern on that port (RTS, then DTR) or
   console `B` restarts the chip into its ROM bootloader, which comes up on USB-Serial-JTAG under another name.
   `build.sh s3 flash` does that, flashes, and restarts the app with a watchdog reset. An RTS reset came back in
   download mode, because macOS holds DTR (= GPIO0 low) through it.
-- The PHY choice survives a restart. Left on OTG, the next boot waited forever to write its log to a USB-Serial-JTAG
-  nobody could reach, and the box vanished from USB. A shutdown handler now gives the PHY back before every
-  restart, and the S3 no longer uses USB-Serial-JTAG as a console at all: a panic report hung there the same way,
-  before the core dump was written. Before USB starts there is no console (the dev kit's UART port has one).
+- A restart alone does not move the host: it keeps the port it has, which is now dead, and never looks for the ROM's
+  USB-Serial-JTAG. So `B` first drops the D+ pull-up (TinyUSB's `tud_disconnect()`) and waits 200 ms; the stale port
+  goes away and the ROM's port appears in its place, in about 1.5 s. A system reset without the detach did not help
+  either: the host never saw the box leave.
+- The PHY choice survives a restart: the OTG driver leaves the RTC register that muxes the internal PHY on the OTG,
+  so `B` writes it back to USB-Serial-JTAG before restarting. Nothing else needs it, because the S3 does not use
+  USB-Serial-JTAG as a console at all (`CONFIG_ESP_CONSOLE_NONE`): a boot or a panic report cannot hang writing to a
+  port nobody can reach, and crashes leave a core dump in flash. Before USB starts there is no console (the dev
+  kit's UART port has one).
 - TinyUSB's console drops output when nobody reads it. The C library then left stdout in its error state for good,
   so the box ran on but never printed again, which looked like a hang. The main loop clears it.
 

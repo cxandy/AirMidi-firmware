@@ -35,8 +35,15 @@ which sequences hardware synths through the box.
 
 The receiver PCB: a Seeed XIAO ESP32-C6 (or ESP32-S3) on headers, MIDI out through a TRS Type A jack, MIDI in
 through a 6N138 optocoupler, a Li-ion cell with a TP4057 USB-C charger and a TPS63020 buck-boost to 3.3 V, a power
-switch, a button and an LED. An ESP32-S3-DevKitC-1 serves as the second box for USB MIDI and the ESP-NOW link. The
-board layer ([board-and-settings.md](docs/design/board-and-settings.md)) is the only code that names a GPIO.
+switch, a button and an LED. An ESP32-S3-DevKitC-1 serves as the second box for USB MIDI and the ESP-NOW link.
+
+Another board is a bare ESP32-S3 on a board of its own (`CONFIG_AIRMIDI_BOARD_DIRECT_S3`, `build.sh s3direct`): power
+and flashing ride the S3's native USB port (USB Serial JTAG; there is no USB-UART bridge on the board), and the console
+moves to TinyUSB's serial port on the same port once the app starts. The TRS port hangs straight off two pins, each
+through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15 (held high, so the port is Type A), and the input is a
+6N137 optocoupler on GPIO21. A WS2812B on GPIO48 shows the box's state in colour, with the same patterns as the
+receiver's LED. The board layer ([board-and-settings.md](docs/design/board-and-settings.md)) is the only code that
+names a GPIO.
 
 **[hardware/](hardware)** has the schematic, the KiCad project, Gerbers, BOM and the printable enclosure, with the
 board's revision history: the photo shows rev A, and rev B fixes what its bring-up found.
@@ -135,7 +142,7 @@ synth page drawn from the synth's MIDI-CI control list.
 - **Host tests** (`test/`): the portable core under ASan + UBSan, with randomized round trips and property tests.
 - **App tests** (`app/test`, `flutter test`): the strips, MPE and BLE MIDI packing, the router, and the DAW (editing,
   timing, files, recording, the player against a fake MIDI engine).
-- **CI** (`.github/workflows/ci.yml`): host tests, the clang-format check, and the firmware for all three boards on
+- **CI** (`.github/workflows/ci.yml`): host tests, the clang-format check, and the firmware for every board on
   every push. `tools/check.sh` runs the same steps locally. Tagging `vX.Y.Z` builds, signs and publishes a release.
 - **Hardware in the loop** (`tools/hil/`): Python and Swift tools on the Mac drive the box and an Arturia AudioFuse
   wired to its jacks. Their first runs found real bugs; each one is written up in [docs/design](docs/design).
@@ -187,6 +194,7 @@ app/        Flutter: the Android app, the macOS app with the DAW, and the code t
 ```sh
 tools/check.sh                    # what CI runs: host tests, clang-format check, firmware for every board
 firmware/build.sh c6 flash        # build and flash the C6 board (s3: XIAO S3 on rev A, s3b: on rev B, s3kit: S3 dev kit)
+firmware/build.sh s3direct flash  # a bare S3 with its own TRS port
 cd app && flutter test            # the apps' tests
 flutter build apk --release       # the Android app (flutter build macos --release for the Mac)
 ```
