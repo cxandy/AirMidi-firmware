@@ -364,6 +364,7 @@ static void print_status(void) {
     uart_midi_get_stats(&t);
     printf("trs: rx %lu bytes (%lu dropped), tx %lu bytes (%lu messages dropped)\n", (unsigned long)t.rx_bytes,
            (unsigned long)t.rx_dropped_bytes, (unsigned long)t.tx_bytes, (unsigned long)t.tx_dropped);
+    if (t.out_type) printf("trs: OUT Type %c (%s)\n", t.out_type, trs_type_name(uart_midi_out_setting()));
     for (int i = 0; i < 2; i++) {
         ble_midi_slot_stats_t s;
         ble_midi_get_stats(i, &s);
@@ -426,7 +427,7 @@ void app_main(void) {
 
     bus_start(s.sysex_timeout_ms);
     usb_midi_start(s.name);  // S3: the console moves to USB from here on
-    uart_midi_start();
+    uart_midi_start(s.trs_out);
     ci_start();
     ble_running = ble_wanted(&s);
     if (ble_running) ble_midi_start(s.name, s.ble_device);
@@ -488,12 +489,14 @@ void app_main(void) {
         }
 
         int c = getchar();              // console: 's' counters, 'i' image info, 'P'/'N'/'S' mode, 'm' merge test hook,
-                                        // '0'-'2' power mode, 'B' bootloader (S3)
+                                        // '0'-'2' power mode, 'B' bootloader (S3), 't' TRS OUT type
         if (c == EOF) clearerr(stdin);  // no input yet; on a UART console EOF would otherwise stick
         // TinyUSB's console drops output nobody reads (a short write), which leaves stdout in its error state for
         // good: the box ran on but never printed again (S3). Clear it, so output resumes when someone reads.
         if (ferror(stdout)) clearerr(stdout);
         if (c == 's') print_status();
+        if (c == 't')
+            uart_midi_cycle_out_type();   // TRS OUT for this session: auto -> A -> B (the setting is in the API)
         if (c == 'i') ota_boot_report();  // which slot runs, its OTA state, core dump
         if (c == 'P') set_mode(AIRMIDI_MODE_PLAY);
         if (c == 'N') set_mode(AIRMIDI_MODE_NETWORK);

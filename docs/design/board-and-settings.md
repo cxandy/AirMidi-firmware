@@ -42,9 +42,12 @@ and the RTC pull-up, and `power_confirm_wake()` at boot sends the box back to sl
 No USB-UART bridge: power and flashing ride the S3's native USB port (USB Serial JTAG), and the console moves to
 TinyUSB's serial port once the app starts (`CONFIG_ESP_CONSOLE_NONE`, as for the other S3 boards). The TRS port hangs
 straight off two pins, each through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15. A TRS port's type is
-which of the two carries the data, so the firmware holds the RING high and runs the UART on the TIP: Type A. Type B
-swaps the two pins in firmware. The input is a 6N137 optocoupler on GPIO21. A WS2812B on GPIO48 is the status light,
-one blue LED on the same on/off pattern as the other boards' LED, and BOOT (GPIO0) is the button.
+which of the two carries the data, so the `trs_out` setting picks it: Type A runs the UART on the TIP and holds the
+RING high as the current source, Type B the other way round. The setting applies while the box runs (the API's
+`trs_out` and the console's `t`), not only at boot. The input is a 6N137 optocoupler on GPIO21 behind a bridge
+rectifier, so it accepts either type and never reports which one arrived: Auto, which follows the input on rev D, is
+Type A here. A WS2812B on GPIO48 is the status light, one blue LED on the same on/off pattern as the other boards'
+LED, and BOOT (GPIO0) is the button.
 
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
 whenever Wi-Fi starts. The dev kit and the bare S3 are held to 15 dBm. At 20 dBm none of the dev kit's Wi-Fi frames
@@ -63,9 +66,9 @@ and the S3 Xtensa, so there are two images anyway and a compile-time table is th
 ## Settings (`lib/src/settings.c` + `firmware/components/nvs_settings`)
 
 The rules live in the portable core and are host-tested: the fields (`settings_t`: name, mode, SysEx timeout, BLE
-in Network mode, the BLE device to connect to, the ESP-NOW cable and its group), the defaults (the name ends in the
-last two MAC bytes, `airmidi-7530`, so two boxes in one room differ), and `settings_check()`, which returns a reason
-string the web UI will show. The name doubles as mDNS host name, so it
+in Network mode, the BLE device to connect to, the ESP-NOW cable and its group, and the TRS OUT type), the defaults
+(the name ends in the last two MAC bytes, `airmidi-7530`, so two boxes in one room differ), and `settings_check()`,
+which returns a reason string the web UI will show. The name doubles as mDNS host name, so it
 follows RFC 1123 label rules (letters, digits, '-', not at either end, at most 31 characters here).
 
 Storage is NVS, namespace `airmidi`:
@@ -73,8 +76,8 @@ Storage is NVS, namespace `airmidi`:
 - **One key per field plus a `schema` number**, not one blob. After an OTA rollback the older firmware still reads
   the fields it knows and ignores newer keys; a blob would have to be versioned and converted both ways.
 - **Migration** runs at boot when the stored schema is older (`migrate()`, a fall-through switch, one step per
-  version). Schema 2 added `ble_in_network`, 3 `ble_device`, 4 `espnow` and `espnow_group`. A newer schema (after a
-  rollback) is logged and read as far as this firmware understands it.
+  version). Schema 2 added `ble_in_network`, 3 `ble_device`, 4 `espnow` and `espnow_group`, 5 `trs_out`. A newer
+  schema (after a rollback) is logged and read as far as this firmware understands it.
 - Missing keys keep their defaults; if the stored values fail `settings_check()`, the defaults are used for this
   boot without overwriting the store.
 - `nvs_settings_get()` hands out a copy under a mutex, so any task can read the settings without races.

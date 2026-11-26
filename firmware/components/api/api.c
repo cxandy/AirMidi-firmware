@@ -154,6 +154,10 @@ static api_reply_t get_status(const req_t *q) {
     cJSON_AddNumberToObject(trs, "tx", t.tx_bytes);
     cJSON_AddNumberToObject(trs, "rx_dropped", t.rx_dropped_bytes);
     cJSON_AddNumberToObject(trs, "tx_dropped", t.tx_dropped);
+    if (t.out_type) {  // a board that can switch: the wiring in use, A or B
+        char type[2] = {t.out_type, 0};
+        cJSON_AddStringToObject(trs, "out_type", type);
+    }
 
     // The ports this board has (CI is internal).
     static const struct {
@@ -296,6 +300,7 @@ static cJSON *settings_json(const settings_t *s) {
     cJSON_AddStringToObject(r, "ble_device", s->ble_device);
     cJSON_AddBoolToObject(r, "espnow", s->espnow);
     cJSON_AddStringToObject(r, "espnow_group", s->espnow_group);
+    cJSON_AddStringToObject(r, "trs_out", trs_type_name(s->trs_out));
     return r;
 }
 
@@ -336,11 +341,14 @@ static api_reply_t post_settings(const req_t *q) {
         strncpy(s.espnow_group, group->valuestring, sizeof s.espnow_group - 1);
         if (strlen(group->valuestring) > SETTINGS_GROUP_MAX) s.espnow_group[0] = 0;  // fails the check below
     }
+    const cJSON *trs_out = cJSON_GetObjectItem(in, "trs_out");
+    if (cJSON_IsString(trs_out)) s.trs_out = trs_type_from_name(trs_out->valuestring);  // COUNT fails the check
     cJSON_Delete(in);
     const char *why = settings_check(&s);
     if (why) return error(400, why);
     if (nvs_settings_set(&s) != ESP_OK) return error(500, "could not store");
     if (strcmp(s.ble_device, old.ble_device)) ble_midi_set_device(s.ble_device);  // applies without a restart
+    if (s.trs_out != old.trs_out) uart_midi_set_out_type(s.trs_out);              // so does this
     bool restart = strcmp(s.name, old.name) != 0 || s.sysex_timeout_ms != old.sysex_timeout_ms ||
                    s.espnow != old.espnow || strcmp(s.espnow_group, old.espnow_group) ||
                    (s.mode == AIRMIDI_MODE_NETWORK && s.ble_in_network != old.ble_in_network);
