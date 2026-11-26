@@ -24,3 +24,7 @@ typedef struct {
 } espnow_midi_info_t;
 
 void espnow_midi_get_info(espnow_midi_info_t *out);
+
+// Boxes of the group heard right now (0 when the cable is off): what the LED reads every tick, without copying
+// the whole info struct.
+int espnow_midi_peer_count(void);

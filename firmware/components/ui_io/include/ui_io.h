@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "airmidi/ui.h"
 
@@ -26,3 +27,7 @@ void ui_dark(void);
 
 // The button is down right now (raw pin).
 bool ui_button_down(int key);
+
+// A white flash for a gesture with nothing else to show for it (short press, all notes off, boot). It covers the
+// state for that long, then the state returns. A plain LED keeps its pattern; a panel ignores it.
+void ui_flash(uint32_t ms);

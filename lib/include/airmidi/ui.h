@@ -18,6 +18,8 @@ typedef enum {
     BUTTON_DOUBLE,     // two short presses within the window: all notes off on every output (panic)
     BUTTON_LONG,       // released after 2-8 s: next mode
     BUTTON_VERY_LONG,  // still held at 8 s (fires then, not on release): Setup mode
+    // A double press with its second press held 2 s, released: the ESP-NOW cable on or off (fires on the release).
+    BUTTON_DOUBLE_LONG,
 } button_event_t;
 
 #define BUTTON_DEBOUNCE_MS 20
@@ -34,6 +36,10 @@ typedef struct {
     bool very_long_fired;
     bool fast_double;  // DOUBLE fires at the second press instead of its release (the panel's panic)
     bool was_double;   // the press under way was the second of a double: its release reports nothing
+    // This press began inside the double-press window, so it is (the second press of) a double press.
+    bool second_press;
+    // ... and has been held 2 s: the LED is solid and the release fires BUTTON_DOUBLE_LONG.
+    bool armed;
 } button_t;
 
 void button_init(button_t *b);
@@ -44,16 +50,22 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now_ms);
 // How long the button has been held (0 if not pressed), so the LED can show a long press being armed.
 uint32_t button_held_ms(const button_t *b, uint32_t now_ms);
 
+// A double press with its second press still held at 2 s: the ESP-NOW toggle is armed and fires on the release.
+bool button_armed(const button_t *b);
+
 // ---- LED -----------------------------------------------------------------------------------------------------
 
 typedef enum {  // highest priority last: the firmware shows the most important state
     LED_OFF,
-    LED_ADVERTISING,   // nothing connected: 100 ms flash every second
-    LED_CONNECTED,     // on, with a short dark flicker on MIDI activity
-    LED_WIFI_JOINING,  // 2 Hz blink
-    LED_SETUP,         // double flash every 1.5 s
-    LED_LOW_BATTERY,   // triple flash every 2 s
-    LED_OTA,           // 10 Hz blink
+    LED_ADVERTISING,       // nothing connected: 100 ms flash every second
+    LED_CONNECTED,         // on, with a short dark flicker on MIDI activity
+    LED_WIFI_JOINING,      // 2 Hz blink
+    LED_WIFI_CONNECTED,    // on: the box is on the network (Network mode with BLE off shows nothing else)
+    LED_ESPNOW_WAITING,    // the cable is on, no box of the group heard: 100 ms flash every second
+    LED_ESPNOW_CONNECTED,  // a box of the group is there
+    LED_SETUP,             // double flash every 1.5 s
+    LED_LOW_BATTERY,       // triple flash every 2 s
+    LED_OTA,               // 10 Hz blink
 } led_state_t;
 
 #define LED_ACTIVITY_MS 40  // how long MIDI activity darkens a steady LED
@@ -99,6 +111,16 @@ typedef struct {
 
 // Brightness 0-255 of each LED.
 void panel_leds(const panel_state_t *s, uint32_t now_ms, uint8_t level[PANEL_KEYS]);
+
+// ---- LED colour -----------------------------------------------------------------------------------------------
+
+typedef struct {
+    uint8_t r, g, b;
+} led_rgb_t;
+
+// The colour of a state: the pattern says what the box is doing, the colour which link it is on. Worth nothing on a
+// board with a plain LED, which shows the pattern alone.
+led_rgb_t led_color(led_state_t s);
 
 // ---- battery -------------------------------------------------------------------------------------------------
 

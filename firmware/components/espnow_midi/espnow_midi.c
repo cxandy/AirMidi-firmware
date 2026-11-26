@@ -166,3 +166,11 @@ void espnow_midi_get_info(espnow_midi_info_t *out) {
     out->tx_unacked = tx_unacked;
     xSemaphoreGive(lock);
 }
+
+int espnow_midi_peer_count(void) {
+    if (!running) return 0;
+    xSemaphoreTake(lock, portMAX_DELAY);
+    int n = espnow_link_peer_count(&link);
+    xSemaphoreGive(lock);
+    return n;
+}

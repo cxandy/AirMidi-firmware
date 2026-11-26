@@ -15,15 +15,23 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now) {
         if (b->stable) {  // press
             b->pressed_at = now;
             b->very_long_fired = false;
+            b->armed = false;
             if (b->fast_double && b->short_pending) {
                 b->short_pending = false;
                 b->was_double = true;
                 ev = BUTTON_DOUBLE;
             }
+            // A press inside the double-press window may be the second half of a double, or of a double-hold.
+            b->second_press = b->short_pending;
         } else {  // release
             uint32_t held = now - b->pressed_at;
+            b->second_press = false;
             if (b->was_double) {
                 b->was_double = false;  // reported at the press
+            } else if (b->armed) {      // held past 2 s: toggle the ESP-NOW cable, now that the button is up
+                b->armed = false;
+                b->short_pending = false;
+                ev = BUTTON_DOUBLE_LONG;
             } else if (b->very_long_fired) {
                 // already reported at 8 s
             } else if (held >= BUTTON_LONG_MS) {
@@ -39,7 +47,10 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now) {
     }
     if (ev) return ev;
 
-    if (b->stable && !b->very_long_fired && now - b->pressed_at >= BUTTON_VERY_LONG_MS) {
+    // A second press still held at 2 s arms the ESP-NOW toggle: the LED goes solid and the release fires it.
+    if (b->stable && b->second_press && !b->armed && now - b->pressed_at >= BUTTON_LONG_MS) b->armed = true;
+
+    if (b->stable && !b->very_long_fired && !b->second_press && now - b->pressed_at >= BUTTON_VERY_LONG_MS) {
         b->very_long_fired = true;
         b->short_pending = false;
         return BUTTON_VERY_LONG;
@@ -49,15 +60,12 @@ button_event_t button_update(button_t *b, bool pressed, uint32_t now) {
         b->short_pending = false;
         return BUTTON_SHORT;
     }
-    // A long press after a short one: the short one stands on its own.
-    if (b->short_pending && b->stable && now - b->pressed_at >= BUTTON_LONG_MS) {
-        b->short_pending = false;
-        return BUTTON_SHORT;
-    }
     return BUTTON_NONE;
 }
 
 uint32_t button_held_ms(const button_t *b, uint32_t now) { return b->stable ? now - b->pressed_at : 0; }
+
+bool button_armed(const button_t *b) { return b->stable && b->armed; }
 
 // ---- LED -----------------------------------------------------------------------------------------------------
 
@@ -79,6 +87,12 @@ bool led_level(led_state_t s, uint32_t now, uint32_t last_activity) {
             return !(last_activity && now - last_activity < LED_ACTIVITY_MS);
         case LED_WIFI_JOINING:
             return now % 500 < 250;
+        case LED_WIFI_CONNECTED:
+            return true;
+        case LED_ESPNOW_WAITING:
+            return flashes(now, 1000, 1, 100, 0);
+        case LED_ESPNOW_CONNECTED:
+            return true;
         case LED_SETUP:
             return flashes(now, 1500, 2, 100, 150);
         case LED_LOW_BATTERY:
@@ -161,6 +175,32 @@ void panel_leds(const panel_state_t *s, uint32_t now, uint8_t level[PANEL_KEYS])
     level[PANEL_PWR] = pwr_level(s, now);
     for (int k = 0; k < PANEL_KEYS; k++)  // held long enough for its hold action: steady, so you know to let go
         if (s->held_ms[k] >= BUTTON_LONG_MS) level[k] = ON;
+}
+
+// ---- LED colour -----------------------------------------------------------------------------------------------
+
+// Blue for the BLE link, green for the network, magenta for the ESP-NOW cable. Amber is Setup, red the battery's
+// warning and purple an update: states of the box rather than a link.
+led_rgb_t led_color(led_state_t s) {
+    switch (s) {
+        case LED_ADVERTISING:
+        case LED_CONNECTED:
+            return (led_rgb_t){0, 0, 255};
+        case LED_WIFI_JOINING:
+        case LED_WIFI_CONNECTED:
+            return (led_rgb_t){0, 255, 0};
+        case LED_ESPNOW_WAITING:
+        case LED_ESPNOW_CONNECTED:
+            return (led_rgb_t){255, 0, 255};
+        case LED_SETUP:
+            return (led_rgb_t){255, 160, 0};
+        case LED_LOW_BATTERY:
+            return (led_rgb_t){255, 0, 0};
+        case LED_OTA:
+            return (led_rgb_t){160, 0, 255};
+        default:
+            return (led_rgb_t){0, 0, 0};
+    }
 }
 
 // ---- battery -------------------------------------------------------------------------------------------------

@@ -60,6 +60,7 @@ static void inject_task(void *arg) {
 static QueueHandle_t button_events;  // (key << 8 | event) from the ui timer to the main loop
 static bool settings_ok;
 static bool ble_running;  // the BLE stack was started at boot
+static bool espnow_on;    // the ESP-NOW cable was on at boot (the LED shows it in Play and Network)
 
 // The self-test for a new image (ota_confirm_after).
 static bool healthy(void) {
@@ -142,8 +143,8 @@ static ble_config_reply_t ble_api(const char *method, const char *path, const ch
     return (ble_config_reply_t){.status = r.status, .json = r.json, .then = r.then, .then_arg = r.then_arg};
 }
 
-// Console 'E': the ESP-NOW cable on or off (for boxes without the web UI at hand). Restarts: the radio's state at
-// boot depends on it.
+// Console 'E' or a double press with the second held 2 s: the ESP-NOW cable on or off (for boxes without the web UI
+// at hand). Restarts: the radio's state at boot depends on it.
 static void toggle_espnow(void) {
     settings_t s;
     nvs_settings_get(&s);
@@ -342,14 +343,23 @@ static void handle_button(button_event_t ev) {
     switch (ev) {
         case BUTTON_DOUBLE:
             ESP_LOGI(TAG, "button: double press, all notes off");
+            ui_flash(300);
             panic();
             break;
         case BUTTON_SHORT:
             ESP_LOGI(TAG, "button: short press, MIDI-CI scan");
+            // A window for a new phone. Setup already holds it open until the way out; Network runs without BLE
+            // (unless asked), so there it is only the scan. An open window is left as it is.
+            if (ble_running && current_mode() != AIRMIDI_MODE_SETUP && ble_config_window_left() == 0)
+                ble_config_set_window(120);
+            ui_flash(300);
             ci_scan(false);
             break;
         case BUTTON_LONG:  // Play <-> Network; from Setup back to Play
             set_mode(current_mode() == AIRMIDI_MODE_PLAY ? AIRMIDI_MODE_NETWORK : AIRMIDI_MODE_PLAY);
+            break;
+        case BUTTON_DOUBLE_LONG:  // second press held 2 s: the ESP-NOW cable, blind
+            toggle_espnow();
             break;
         case BUTTON_VERY_LONG:
             set_mode(AIRMIDI_MODE_SETUP);
@@ -432,6 +442,7 @@ void app_main(void) {
     if (ble_running) ble_midi_start(s.name, s.ble_device);
     net_keep_radio_on(s.espnow);  // ESP-NOW needs the radio in Play mode too
     net_start(s.mode, s.name);
+    espnow_on = s.espnow;
     if (s.espnow) espnow_midi_start(s.name, s.espnow_group);
     if (ble_running) ble_midi_set_slow_advertising(s.mode != AIRMIDI_MODE_PLAY);
     if (s.mode == AIRMIDI_MODE_NETWORK) start_network_midi();
@@ -477,11 +488,19 @@ void app_main(void) {
             panel_update();
         } else {
             net_state_t ns = net_state();
-            ui_set_led(power_low()            ? LED_LOW_BATTERY
-                       : ns == NET_AP         ? LED_SETUP
-                       : ns == NET_JOINING    ? LED_WIFI_JOINING
-                       : ble_midi_connected() ? LED_CONNECTED
-                                              : LED_ADVERTISING);
+            // A slot reads connected before BLE ever starts (nothing has written its free value into it yet), so
+            // Network mode without BLE showed the connected LED: only ask for a connection when the stack runs.
+            bool on_ble = ble_running && ble_midi_connected();
+            // The colour names the link (led_color): blue BLE, green the network, magenta the ESP-NOW cable. The
+            // cable is a switch of its own, not a mode, so while it is on it owns the light in Play and Network;
+            // Setup's amber still wins, because being in Setup is the deliberate act.
+            ui_set_led(power_low()           ? LED_LOW_BATTERY
+                       : ns == NET_AP        ? LED_SETUP
+                       : espnow_on           ? (espnow_midi_peer_count() ? LED_ESPNOW_CONNECTED : LED_ESPNOW_WAITING)
+                       : ns == NET_JOINING   ? LED_WIFI_JOINING
+                       : ns == NET_CONNECTED ? LED_WIFI_CONNECTED
+                       : on_ble              ? LED_CONNECTED
+                                             : LED_ADVERTISING);
         }
 
         int c = getchar();              // console: 's' counters, 'i' image info, 'P'/'N'/'S' mode, 'm' merge test hook,
