@@ -42,8 +42,10 @@ and the RTC pull-up, and `power_confirm_wake()` at boot sends the box back to sl
 bridge; power and flashing ride the native USB port, and the console is TinyUSB's serial port once the app starts.
 The TRS port hangs straight off two pins, each through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15 held
 high, so the data is on the TIP (Type A); Type B swaps the two. The input is a 6N137 on GPIO21. A blue LED on GPIO48,
-through its resistor to GND, is the status light (active high, the same on/off pattern as the other boards' LED), and
-BOOT (GPIO0) is the button.
+through its resistor to GND, is the status light (active high, on the same on/off pattern as the other boards' LED,
+plus one 400 ms flash every 2 s when Wi-Fi is connected with BLE off, so it cannot be read as BLE advertising), and
+BOOT (GPIO0) is the button. It is deliberately one plain blue LED: it matches the receiver's LED and the panel's BLE
+LED, and colour would mean a different part and a board change.
 
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
 whenever Wi-Fi starts. The dev kit and the bare S3 are held to 15 dBm. At 20 dBm none of the dev kit's Wi-Fi frames arrived anywhere, while its

@@ -40,7 +40,8 @@ board layer ([board-and-settings.md](docs/design/board-and-settings.md)) is the 
 
 Another board is a bare ESP32-S3 with its TRS port straight off two pins (`CONFIG_AIRMIDI_BOARD_DIRECT_S3`,
 `build.sh s3direct`): TIP on GPIO14, RING on GPIO15 held high (Type A), IN through a 6N137 on GPIO21, a blue LED on
-GPIO48 and BOOT on GPIO0; power, flashing and the console ride the native USB port.
+GPIO48 and BOOT on GPIO0; power, flashing and the console ride the native USB port. The LED has one long flash
+(400 ms every 2 s) when Wi-Fi is connected with BLE off.
 
 **[hardware/](hardware)** has the schematic, the KiCad project, Gerbers, BOM and the printable enclosure, with the
 board's revision history: the photo shows rev A, and rev B fixes what its bring-up found.

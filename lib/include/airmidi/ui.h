@@ -48,12 +48,13 @@ uint32_t button_held_ms(const button_t *b, uint32_t now_ms);
 
 typedef enum {  // highest priority last: the firmware shows the most important state
     LED_OFF,
-    LED_ADVERTISING,   // nothing connected: 100 ms flash every second
-    LED_CONNECTED,     // on, with a short dark flicker on MIDI activity
-    LED_WIFI_JOINING,  // 2 Hz blink
-    LED_SETUP,         // double flash every 1.5 s
-    LED_LOW_BATTERY,   // triple flash every 2 s
-    LED_OTA,           // 10 Hz blink
+    LED_ADVERTISING,     // nothing connected: 100 ms flash every second
+    LED_CONNECTED,       // on, with a short dark flicker on MIDI activity
+    LED_WIFI_JOINING,    // 2 Hz blink
+    LED_WIFI_CONNECTED,  // joined with BLE off: 400 ms flash every 2 s
+    LED_SETUP,           // double flash every 1.5 s
+    LED_LOW_BATTERY,     // triple flash every 2 s
+    LED_OTA,             // 10 Hz blink
 } led_state_t;
 
 #define LED_ACTIVITY_MS 40  // how long MIDI activity darkens a steady LED

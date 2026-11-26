@@ -480,11 +480,13 @@ void app_main(void) {
             // A slot reads connected before BLE has started (nothing wrote its free value into it yet), so Network
             // mode without BLE showed the connected LED: only ask once the stack runs.
             bool on_ble = ble_running && ble_midi_connected();
-            ui_set_led(power_low()         ? LED_LOW_BATTERY
-                       : ns == NET_AP      ? LED_SETUP
-                       : ns == NET_JOINING ? LED_WIFI_JOINING
-                       : on_ble            ? LED_CONNECTED
-                                           : LED_ADVERTISING);
+            led_state_t ls = on_ble ? LED_CONNECTED : LED_ADVERTISING;
+            // Wi-Fi up with BLE off: one long flash, so it cannot be read as BLE advertising.
+            if (ns == NET_CONNECTED && !ble_running) ls = LED_WIFI_CONNECTED;
+            if (ns == NET_JOINING) ls = LED_WIFI_JOINING;
+            if (ns == NET_AP) ls = LED_SETUP;
+            if (power_low()) ls = LED_LOW_BATTERY;
+            ui_set_led(ls);
         }
 
         int c = getchar();              // console: 's' counters, 'i' image info, 'P'/'N'/'S' mode, 'm' merge test hook,

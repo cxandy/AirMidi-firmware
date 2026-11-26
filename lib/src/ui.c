@@ -79,6 +79,8 @@ bool led_level(led_state_t s, uint32_t now, uint32_t last_activity) {
             return !(last_activity && now - last_activity < LED_ACTIVITY_MS);
         case LED_WIFI_JOINING:
             return now % 500 < 250;
+        case LED_WIFI_CONNECTED:
+            return now % 2000 < 400;
         case LED_SETUP:
             return flashes(now, 1500, 2, 100, 150);
         case LED_LOW_BATTERY:
