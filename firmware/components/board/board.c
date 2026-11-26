@@ -16,6 +16,7 @@ static const board_t the_board = {
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO0
     .batt_offset_mv = 14,               // board #1: calibrated ADC read 14 mV under the meter (2026-10-05)
+    .trs_ring = GPIO_NUM_NC,
 };
 // Inside the XIAO C6 module: GPIO3 low powers the RF switch, GPIO14 low selects the ceramic antenna (high = the
 // U.FL connector, measured ~20 dB weaker with nothing plugged in).
@@ -30,6 +31,7 @@ static const board_t the_board = {
     .button = GPIO_NUM_3,
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO1
+    .trs_ring = GPIO_NUM_NC,
 };
 #elif CONFIG_AIRMIDI_BOARD_XIAO_S3_B
 // pcb/midi_receiver/circuit.py PANEL in the design workspace: LEDs A1 A3 SDA SCL, buttons SCK MISO MOSI A2.
@@ -45,6 +47,7 @@ static const board_t the_board = {
     .panel_led_max = {25, 25, 100, 35},  // all too bright at full duty, and yellow a little dim against the rest
     .batt_adc_unit = ADC_UNIT_1,
     .batt_adc_channel = ADC_CHANNEL_0,  // GPIO1
+    .trs_ring = GPIO_NUM_NC,
 };
 #elif CONFIG_AIRMIDI_BOARD_REV_C
 // pcb/midi_receiver_c/circuit.py in the design workspace. MIDI TX is off UART0's pin, so the ROM's boot log stays out
@@ -65,6 +68,7 @@ static const board_t the_board = {
     .batt_adc_channel = ADC_CHANNEL_9,  // GPIO10
     .opto_en = GPIO_NUM_40,
     .vbus_sense = GPIO_NUM_21,
+    .trs_ring = GPIO_NUM_NC,
 };
 #elif CONFIG_AIRMIDI_BOARD_DEVKITC_S3
 static const board_t the_board = {
@@ -79,6 +83,28 @@ static const board_t the_board = {
     // answering its authentication) while BLE worked; at 10 dBm all did. Most likely its 3.3 V sagging at the
     // transmit peaks on a USB port.
     .wifi_max_tx = 60,
+    .trs_ring = GPIO_NUM_NC,
+};
+
+#elif CONFIG_AIRMIDI_BOARD_DIRECT_S3
+// A bare ESP32-S3 with its TRS port hanging straight off two pins, each through a 22 ohm series resistor: TIP on
+// GPIO14, RING on GPIO15, and the input through a 6N137 on GPIO21. A TRS port's type is which pin carries the data:
+// the firmware holds the RING high and keeps the UART on the TIP, which is Type A; Type B swaps the two (the RING
+// carries the data and the TIP is held high). Power and flashing ride the native USB port (there is no USB-UART
+// bridge); the console moves to TinyUSB's serial port once the app starts, as on every S3 board
+// (sdkconfig.defaults.esp32s3).
+static const board_t the_board = {
+    .name = "bare ESP32-S3 with a TRS port",
+    .midi_tx = GPIO_NUM_14,  // TRS TIP: the data out on a Type A port
+    .midi_rx = GPIO_NUM_21,  // TRS IN, through the 6N137
+    .led = GPIO_NUM_48,      // one WS2812 on the 5 V rail, its data line here
+    .led_rgb = true,
+    .button = GPIO_NUM_0,  // BOOT, with the board's pull-up
+    .batt_adc_unit = ADC_UNIT_1,
+    .batt_adc_channel = -1,  // no battery: always "on USB"
+    // The bare board is USB-powered like the dev kit: hold Wi-Fi to 15 dBm, where its 3.3 V does not sag.
+    .wifi_max_tx = 60,
+    .trs_ring = GPIO_NUM_15,  // TRS RING: held high, so the data out is the TIP (Type A)
 };
 #else
 #error "no board selected (CONFIG_AIRMIDI_BOARD)"
@@ -103,6 +129,13 @@ void board_init(void) {
         gpio_config_t led = {.pin_bit_mask = 1ULL << the_board.led, .mode = GPIO_MODE_OUTPUT};
         gpio_config(&led);
         gpio_set_level(the_board.led, 0);
+    }
+    if (the_board.trs_ring != GPIO_NUM_NC) {
+        // Hold the RING high and leave the UART on the TIP: a Type A port, so the board can drive a MIDI OUT on the
+        // 3.5mm jack. Type B holds the TIP high and puts the data on the RING instead.
+        gpio_config_t sw = {.pin_bit_mask = 1ULL << the_board.trs_ring, .mode = GPIO_MODE_OUTPUT};
+        gpio_config(&sw);
+        gpio_set_level(the_board.trs_ring, 1);
     }
     if (the_board.button != GPIO_NUM_NC) {
         gpio_config_t btn = {

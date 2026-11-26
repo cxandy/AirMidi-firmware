@@ -78,7 +78,7 @@ static void tick(void *arg) {
     }
     if (b->panel)
         panel_show(now);
-    else if (b->led != GPIO_NUM_NC)
+    else if (b->led != GPIO_NUM_NC && !b->led_rgb)  // a WS2812 takes bits, not a level; the driver owns the pin
         gpio_set_level(b->led, !dark && led_level(led, now, bus_last_activity_ms()));
 }
 
