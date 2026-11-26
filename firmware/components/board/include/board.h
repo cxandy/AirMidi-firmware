@@ -16,7 +16,7 @@ typedef struct {
     gpio_num_t midi_tx;  // D6 -> J2 MIDI OUT (UART0's pin; driven by UART1 through the GPIO matrix)
     gpio_num_t midi_rx;  // D7 <- J3 MIDI IN (6N138 output, 1k pull-up: idles high)
     gpio_num_t led;      // D1, 3 mm LED + 1k to GND, active high (GPIO_NUM_NC: none, or a panel instead)
-    bool led_rgb;        // led is one addressable WS2812 (5 V, data here) rather than a plain LED on the pin
+    bool led_rgb;        // led is one addressable WS2812 (5 V, data here), not a plain LED: one colour
     gpio_num_t button;   // D2, to GND, internal pull-up: active low (GPIO_NUM_NC: a panel instead)
     // Rev B panel, in lib/ui's panel_key_t order (BLE, NET, STP, PWR): LEDs active high through their resistor,
     // buttons to GND with the internal pull-up. PWR's button is an RTC GPIO, so it can wake the chip from deep sleep.

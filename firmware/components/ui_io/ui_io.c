@@ -6,10 +6,19 @@
 #include "bus.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
+#include "driver/rmt_tx.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 
 #define PERIOD_US 10000
+
+// The s3direct status light is one WS2812B: it takes its levels as a bit stream at 800 kHz, not as a pin level. 0.3 us
+// high is a 0, 0.9 us is a 1, 1.2 us a bit. The RMT channel runs at 10 MHz, so a tick is 0.1 us and a bit is 12.
+#define RGB_TICKS 12
+#define RGB_ONE_HIGH 9  // the high half of a 1, and so the low half of a 0
+// One fixed colour, on and off exactly as the plain LED: about 9% of full brightness is plenty for a status light,
+// and blue is what the receiver's LED and the panel's BLE LED are.
+#define RGB_BLUE 24  // of 255
 
 static button_t buttons[PANEL_KEYS];
 static bool
@@ -24,7 +33,44 @@ static portMUX_TYPE lock = portMUX_INITIALIZER_UNLOCKED;
 static panel_state_t panel;  // from main (ui_set_panel), plus what only this file knows: hold times, sweep, bar
 static uint32_t bar_until, sweep_from;
 
+static rmt_channel_handle_t rgb_chan;
+static rmt_encoder_handle_t rgb_encoder;
+static rmt_symbol_word_t rgb_bits[24];
+static bool rgb_sent;
+
 static uint32_t now_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
+
+// One bit per symbol: high for the one's width, then low for the rest of the 1.2 us. Green and red stay 0, so the one
+// WS2812B shows a single blue light.
+static void rgb_send(bool on) {
+    if (rgb_sent == on) return;
+    uint32_t v = on ? RGB_BLUE : 0;  // the blue byte: WS2812 order is green, red, blue
+    for (int i = 0; i < 24; i++) {
+        bool one = (v >> (23 - i)) & 1u;
+        rgb_bits[i].level0 = 1;
+        rgb_bits[i].duration0 = one ? RGB_ONE_HIGH : RGB_TICKS - RGB_ONE_HIGH;
+        rgb_bits[i].level1 = 0;
+        rgb_bits[i].duration1 = one ? RGB_TICKS - RGB_ONE_HIGH : RGB_ONE_HIGH;
+    }
+    const rmt_transmit_config_t tx = {.loop_count = 0};
+    if (rmt_transmit(rgb_chan, rgb_encoder, rgb_bits, sizeof rgb_bits, &tx) != ESP_OK) return;  // again next tick
+    rmt_tx_wait_all_done(rgb_chan, 20);  // ~30 us of bits: over long before the next 10 ms tick
+    rgb_sent = on;                       // only now: a refused frame must be retried
+}
+
+static void rgb_init(gpio_num_t gpio) {
+    const rmt_tx_channel_config_t chan = {
+        .gpio_num = gpio,
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10 * 1000 * 1000,
+        .mem_block_symbols = 48,  // a whole block: 24 bits fit with room to spare
+        .trans_queue_depth = 1,
+    };
+    ESP_ERROR_CHECK(rmt_new_tx_channel(&chan, &rgb_chan));
+    const rmt_copy_encoder_config_t copy = {};
+    ESP_ERROR_CHECK(rmt_new_copy_encoder(&copy, &rgb_encoder));
+    ESP_ERROR_CHECK(rmt_enable(rgb_chan));
+}
 
 static void panel_leds_init(const board_t *b) {
     // XTAL clock: steady while frequency scaling moves the APB clock (power mode 1).
@@ -78,8 +124,13 @@ static void tick(void *arg) {
     }
     if (b->panel)
         panel_show(now);
-    else if (b->led != GPIO_NUM_NC && !b->led_rgb)  // a WS2812 takes bits, not a level; the driver owns the pin
-        gpio_set_level(b->led, !dark && led_level(led, now, bus_last_activity_ms()));
+    else if (b->led != GPIO_NUM_NC) {
+        bool on = !dark && led_level(led, now, bus_last_activity_ms());
+        if (b->led_rgb)
+            rgb_send(on);
+        else
+            gpio_set_level(b->led, on);
+    }
 }
 
 void ui_start(void (*on_button)(int key, button_event_t ev)) {
@@ -103,6 +154,7 @@ void ui_start(void (*on_button)(int key, button_event_t ev)) {
         buttons[k].fast_double = b->panel;  // panic at the second press (one button: rev A's gestures as they were)
         swallow[k] = gpio_get_level(pins[k]) == 0;
     }
+    if (b->led_rgb) rgb_init(b->led);
     const esp_timer_create_args_t args = {.callback = tick, .name = "ui"};
     esp_timer_handle_t t;
     ESP_ERROR_CHECK(esp_timer_create(&args, &t));

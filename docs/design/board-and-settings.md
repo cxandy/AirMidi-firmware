@@ -44,7 +44,7 @@ TinyUSB's serial port once the app starts (`CONFIG_ESP_CONSOLE_NONE`, as for the
 straight off two pins, each through a 22 ohm series resistor: TIP on GPIO14, RING on GPIO15. A TRS port's type is
 which of the two carries the data, so the firmware holds the RING high and runs the UART on the TIP: Type A. Type B
 swaps the two pins in firmware. The input is a 6N137 optocoupler on GPIO21. A WS2812B on GPIO48 is the status light,
-not driven yet, and BOOT (GPIO0) is the button.
+one blue LED on the same on/off pattern as the other boards' LED, and BOOT (GPIO0) is the button.
 
 **Wi-Fi transmit power** is a board property too (`wifi_max_tx`, in 0.25 dBm, 0 = the chip's 20 dBm), applied
 whenever Wi-Fi starts. The dev kit and the bare S3 are held to 15 dBm. At 20 dBm none of the dev kit's Wi-Fi frames
